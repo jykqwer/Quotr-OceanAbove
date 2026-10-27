@@ -210,6 +210,7 @@ A label, one sentence, one coral action. No illustration.
 - **The open conversation's route is persistent**: with a quote (pending or booked) in the thread, the map keeps drawing it under any hover/pin, and the footer says so.
 - Counts sit top-right and are **buttons**: hovering `711 Cities` or `40 Hubs` opens a list panel with letter buckets (A–C, D–F, …) plus `All`, two columns, scrollable, no search box. Do not show a hub-link count here — two numbers only.
   Every name in the list is a **button**: clicking it selects that city on the map (same highlight as clicking its dot) and closes the list. A plain `<li>` is a dead end.
+  The **Cities** list holds all 711 cities — hubs included, marked with the same cream square the legend uses (spokes are round dots) — so "711 Cities · 40 Hubs" reads as a subset, not two separate sets.
   The panel is wide and the trigger is small, so **it must not close on leaving the trigger**: it stays open while the pointer crosses the gap, closes when the pointer leaves the panel (with a ~220 ms grace), on `Escape`, or on a click outside. Panel background is opaque, never translucent, so the dots cannot read through the names.
 - Legend and state sit in the footer row; the honesty note gets its own line.
 - The hover tooltip flips below the point near the top and right-aligns past 55% width so it never clips. Non-hub tooltips name the direct hubs; hub tooltips give route/client counts.

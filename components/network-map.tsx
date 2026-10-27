@@ -183,7 +183,6 @@ export function NetworkMap({
   const cityNames = useMemo(
     () =>
       [...(network?.cities ?? [])]
-        .filter((city) => !city.isHub)
         .map((city) => city.name)
         .sort((a, b) => a.localeCompare(b)),
     [network],
@@ -307,6 +306,7 @@ export function NetworkMap({
                 <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px]">
                   {visibleNames.map((name) => {
                     const isActive = selected === name;
+                    const isHub = index.byName.get(name)?.isHub ?? false;
                     return (
                       <li key={name}>
                         <button
@@ -316,14 +316,18 @@ export function NetworkMap({
                             setListOpen(null);
                           }}
                           aria-pressed={isActive}
-                          title={`${name} · ${t("map.listHint")}`}
-                          className={`w-full truncate rounded px-1 py-0.5 text-left transition-colors ${
+                          title={`${name}${isHub ? ` · ${t("map.hub")}` : ""}`}
+                          className={`flex w-full items-center gap-1.5 truncate rounded px-1 py-0.5 text-left transition-colors ${
                             isActive
                               ? "bg-sunset-500/15 text-sunset-200"
                               : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
                           }`}
                         >
-                          {name}
+                          <span
+                            aria-hidden="true"
+                            className={`h-1 w-1 shrink-0 ${isHub ? "bg-lamp-300" : "rounded-full bg-lamp-400/70"}`}
+                          />
+                          <span className="truncate">{name}</span>
                         </button>
                       </li>
                     );
