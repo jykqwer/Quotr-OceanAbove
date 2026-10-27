@@ -36,7 +36,7 @@ const en = {
 
   "login.heroTitle": "Book the ocean, in plain words.",
   "login.heroSubtitle":
-    "Tell Ocean Above where you want to go. It finds the cheapest route, spells out every leg and transfer, and books only after you confirm.",
+    "Tell Ocean Above where you want to go. It finds the cheapest route.",
 
   "chat.newChat": "New conversation",
   "chat.title": "Booking desk",

@@ -116,7 +116,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               aria-describedby={mode === "signup" ? "username-rules" : undefined}
             />
             {mode === "signup" && (
-              <p id="username-rules" className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
+              <p id="username-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
                 {t("auth.usernameRules")}
               </p>
             )}
@@ -137,7 +137,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               aria-describedby={mode === "signup" ? "password-rules" : undefined}
             />
             {mode === "signup" && (
-              <p id="password-rules" className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
+              <p id="password-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
                 {t("auth.passwordRules")}
               </p>
             )}
@@ -160,7 +160,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           )}
 
           {error && (
-            <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[12px] text-rose-300">
+            <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[13px] text-rose-300">
               {error}
             </p>
           )}
@@ -184,13 +184,13 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               setMode(mode === "signin" ? "signup" : "signin");
               setError(null);
             }}
-            className="text-[12px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
+            className="text-[13px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
           >
             {mode === "signin" ? t("auth.switchToSignUp") : t("auth.switchToSignIn")}
           </button>
         </div>
 
-        <p className="border-t border-white/10 px-4 py-2 text-right text-[12.5px] text-slate-500">
+        <p className="border-t border-white/10 px-4 py-2 text-right text-[13.5px] text-slate-500">
           {t("auth.demoLine", { username: demo.username, password: demo.password })}
         </p>
       </div>

@@ -152,7 +152,7 @@ export function CitySelect({
         </span>
         <span
           aria-hidden="true"
-          className={`shrink-0 text-[11px] text-slate-500 transition-transform ${open ? "rotate-180 text-sunset-300" : ""}`}
+          className={`shrink-0 text-[12px] text-slate-500 transition-transform ${open ? "rotate-180 text-sunset-300" : ""}`}
         >
           ▾
         </span>
@@ -177,7 +177,7 @@ export function CitySelect({
                 placeholder={t("home.searchCity")}
                 aria-label={t("home.searchCity")}
                 aria-controls={`${id}-list`}
-                className="field py-1.5 text-[13px]"
+                className="field py-1.5 text-[14px]"
               />
             </div>
 
@@ -189,7 +189,7 @@ export function CitySelect({
               className="scroll-slim max-h-[182px] overflow-y-auto py-1"
             >
             {sections.length === 0 ? (
-              <p className="px-3 py-2 text-[12.5px] text-slate-600">{t("home.noCityMatch")}</p>
+              <p className="px-3 py-2 text-[13.5px] text-slate-600">{t("home.noCityMatch")}</p>
             ) : (
               sections.map((section) => (
                 <div key={section.key} role="group" aria-label={section.label}>
@@ -208,7 +208,7 @@ export function CitySelect({
                         data-index={index}
                         onMouseEnter={() => setActive(index)}
                         onClick={() => choose(name)}
-                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13.5px] transition-colors ${
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[14.5px] transition-colors ${
                           highlighted ? "bg-sunset-500/[0.14] text-sunset-100" : "text-slate-300"
                         }`}
                       >

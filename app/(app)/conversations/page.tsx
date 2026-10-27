@@ -14,10 +14,10 @@ export default function ConversationsPage() {
     <div className="mx-auto w-full max-w-4xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[20px] font-medium tracking-tight text-slate-100">
+          <h1 className="text-[22px] font-medium tracking-tight text-slate-100">
             {t("conversations.title")}
           </h1>
-          <p className="mt-1 text-[13px] text-slate-500">{t("conversations.subtitle")}</p>
+          <p className="mt-1 text-[14px] text-slate-500">{t("conversations.subtitle")}</p>
         </div>
         <Link href="/chat" className="btn-ghost">
           {t("common.startChat")}
@@ -38,24 +38,24 @@ export default function ConversationsPage() {
               value={list.search}
               onChange={(event) => list.setSearch(event.target.value)}
               placeholder={t("chat.searchPlaceholder")}
-              className="w-[170px] rounded border border-white/10 bg-abyss-950 px-2 py-1 text-[12.5px] text-slate-200 placeholder:text-slate-600 focus:border-ocean-400/60 focus:outline-none focus:ring-2 focus:ring-ocean-500/25 sm:w-[220px]"
+              className="w-[170px] rounded border border-white/10 bg-abyss-950 px-2 py-1 text-[13.5px] text-slate-200 placeholder:text-slate-600 focus:border-ocean-400/60 focus:outline-none focus:ring-2 focus:ring-ocean-500/25 sm:w-[220px]"
             />
-            <span className="mono hidden text-[10.5px] uppercase tracking-[0.14em] text-slate-700 sm:block">
+            <span className="mono hidden text-[11.5px] uppercase tracking-[0.14em] text-slate-700 sm:block">
               {t("chat.resultCount", { count: list.items.length, total: list.total })}
             </span>
           </div>
         </div>
 
         {list.loading ? (
-          <p className="py-14 text-center text-[12px] text-slate-600">{t("common.loading")}</p>
+          <p className="py-14 text-center text-[13px] text-slate-600">{t("common.loading")}</p>
         ) : list.error ? (
-          <p className="py-14 text-center text-[12px] text-rose-300">{list.error}</p>
+          <p className="py-14 text-center text-[13px] text-rose-300">{list.error}</p>
         ) : list.items.length === 0 ? (
           <div className="px-4 py-14 text-center">
             <p className="col-head">
               {list.term ? t("chat.searchEmpty", { term: list.term }) : t("conversations.empty")}
             </p>
-            <p className="mx-auto mt-2 max-w-sm text-[13px] text-slate-500">
+            <p className="mx-auto mt-2 max-w-sm text-[14px] text-slate-500">
               {t("conversations.emptyHint")}
             </p>
           </div>
@@ -70,7 +70,7 @@ export default function ConversationsPage() {
                   <th scope="col" className="col-head px-4 py-1.5 text-left">
                     {t("conversations.colSubject")}
                   </th>
-                  <th scope="col" className="col-head hidden w-20 px-2 py-1.5 text-right sm:table-cell">
+                  <th scope="col" className="col-head hidden w-[100px] px-2 py-1.5 text-right sm:table-cell">
                     {t("conversations.messages", { count: "" }).trim()}
                   </th>
                   <th scope="col" className="w-8 px-2" />
@@ -82,20 +82,20 @@ export default function ConversationsPage() {
                     key={conversation.id}
                     className="group border-b border-white/5 last:border-0 hover:bg-white/[0.03]"
                   >
-                    <td className="mono hidden whitespace-nowrap px-4 py-2.5 text-[12px] text-slate-600 sm:table-cell">
+                    <td className="mono hidden whitespace-nowrap px-4 py-2.5 text-[13px] text-slate-600 sm:table-cell">
                       {formatDateTime(conversation.updatedAt, lang)}
                     </td>
                     <td className="px-4 py-2.5">
                       <Link href={`/conversations/${conversation.id}`} className="block min-w-0">
-                        <span className="block truncate text-[13.5px] text-slate-200 group-hover:text-ocean-200">
+                        <span className="block truncate text-[14.5px] text-slate-200 group-hover:text-ocean-200">
                           {conversation.title}
                         </span>
-                        <span className="mt-0.5 block truncate text-[11.5px] text-slate-600">
+                        <span className="mt-0.5 block truncate text-[12.5px] text-slate-600">
                           {conversation.preview || "—"}
                         </span>
                       </Link>
                     </td>
-                    <td className="mono hidden whitespace-nowrap px-2 py-2.5 text-right text-[12px] text-slate-500 sm:table-cell">
+                    <td className="mono hidden whitespace-nowrap px-2 py-2.5 text-right text-[13px] text-slate-500 sm:table-cell">
                       {conversation.messageCount}
                     </td>
                     <td className="px-2 text-right">
@@ -111,7 +111,7 @@ export default function ConversationsPage() {
                 type="button"
                 onClick={() => void list.loadMore()}
                 disabled={list.loadingMore}
-                className="mono w-full border-t border-white/10 px-4 py-2.5 text-[11px] uppercase tracking-[0.14em] text-slate-500 transition-colors hover:bg-white/[0.03] hover:text-slate-300 disabled:opacity-50"
+                className="mono w-full border-t border-white/10 px-4 py-2.5 text-[12px] uppercase tracking-[0.14em] text-slate-500 transition-colors hover:bg-white/[0.03] hover:text-slate-300 disabled:opacity-50"
               >
                 {list.loadingMore ? t("chat.loadingMore") : t("chat.loadMore")}
               </button>

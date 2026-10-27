@@ -23,14 +23,14 @@ export function TicketCard({
     <article className="overflow-hidden rounded-lg border border-white/15 bg-abyss-900 shadow-pass animate-rise">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
         <span className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-slate-100">
             OA
           </span>
           <span className="col-head">{t("pass.ticketLabel")}</span>
-          <span className="mono text-[11px] text-slate-500">{ticket.id}</span>
+          <span className="mono text-[12px] text-slate-500">{ticket.id}</span>
         </span>
         <span className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] text-sunset-300">
+          <span className="inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.16em] text-sunset-300">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-sunset-400" />
             {t("quote.booked")}
           </span>
@@ -44,7 +44,7 @@ export function TicketCard({
               title={open ? t("tickets.collapse") : t("tickets.expand")}
               className="flex h-6 w-6 items-center justify-center rounded border border-white/15 text-slate-400 transition-colors hover:border-sunset-400/50 hover:text-sunset-300"
             >
-              <span aria-hidden="true" className="mono text-[12px] leading-none">
+              <span aria-hidden="true" className="mono text-[13px] leading-none">
                 {open ? "−" : "+"}
               </span>
             </button>
@@ -55,14 +55,14 @@ export function TicketCard({
       <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-4 pb-3.5 pt-3.5">
         <div className="min-w-0">
           <p className="col-head">{t("pass.from")}</p>
-          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">{ticket.origin}</p>
+          <p className="display mt-1 truncate text-[25px] leading-tight text-slate-50">{ticket.origin}</p>
         </div>
-        <div className="pb-1.5 text-[15px] text-sunset-400" aria-hidden="true">
+        <div className="pb-1.5 text-[16px] text-sunset-400" aria-hidden="true">
           →
         </div>
         <div className="min-w-0 text-right">
           <p className="col-head">{t("pass.to")}</p>
-          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">
+          <p className="display mt-1 truncate text-[25px] leading-tight text-slate-50">
             {ticket.destination}
           </p>
         </div>
@@ -73,10 +73,10 @@ export function TicketCard({
           open ? "" : "border-t border-white/5 pt-2.5"
         }`}
       >
-        <span className="mono text-[11.5px] text-slate-500">
+        <span className="mono text-[12.5px] text-slate-500">
           {ticket.departAt ? formatDateTime(ticket.departAt, lang) : formatDateTime(ticket.bookedAt, lang)}
         </span>
-        <span className="mono text-[14px] text-sand">
+        <span className="mono text-[15px] text-sand">
           {formatUsd(ticket.passengers.length > 1 ? ticket.totalPriceUsd : ticket.priceUsd)}
         </span>
       </div>
@@ -107,23 +107,23 @@ export function TicketCard({
                 <p className="col-head">
                   {ticket.passengers.length > 1 ? t("quote.orderTotal") : t("quote.totalPrice")}
                 </p>
-                <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
+                <p className="mono mt-0.5 text-[29px] leading-none text-sunset-600">
                   {formatUsd(ticket.passengers.length > 1 ? ticket.totalPriceUsd : ticket.priceUsd)}
                 </p>
                 {ticket.passengers.length > 1 && (
-                  <p className="mono mt-1 text-[11.5px] text-ink-600">
+                  <p className="mono mt-1 text-[12.5px] text-ink-600">
                     {formatUsd(ticket.priceUsd)} × {ticket.passengers.length}
                   </p>
                 )}
               </div>
               <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                 <Barcode value={ticket.id} />
-                <span className="mono text-[10px] uppercase tracking-[0.14em] text-ink-600">
+                <span className="mono text-[11px] uppercase tracking-[0.14em] text-ink-600">
                   {t("pass.scanHint")}
                 </span>
               </span>
             </div>
-            <p className="mono mt-2 border-t border-ink-900/15 pt-2 text-[11px] uppercase tracking-[0.14em] text-ink-600">
+            <p className="mono mt-2 border-t border-ink-900/15 pt-2 text-[12px] uppercase tracking-[0.14em] text-ink-600">
               {t("quote.ticketFor")}
             </p>
           </div>
@@ -137,7 +137,7 @@ function Field({ label, value, mono = false }: { label: string; value: string; m
   return (
     <div className="min-w-0">
       <p className="col-head">{label}</p>
-      <p className={`mt-1 truncate text-[13px] text-slate-300 ${mono ? "mono" : ""}`}>{value}</p>
+      <p className={`mt-1 truncate text-[14px] text-slate-300 ${mono ? "mono" : ""}`}>{value}</p>
     </div>
   );
 }

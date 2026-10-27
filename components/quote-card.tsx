@@ -82,12 +82,12 @@ export function QuoteCard({
     <article className="mt-3 overflow-hidden rounded-lg border border-white/15 bg-abyss-900 shadow-pass">
       <header className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-2">
         <span className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+          <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-slate-100">
             OA
           </span>
           <span className="col-head">{t("pass.quoteLabel")}</span>
         </span>
-        <span className={`inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.16em] ${status.text}`}>
+        <span className={`inline-flex items-center gap-1.5 text-[12px] uppercase tracking-[0.16em] ${status.text}`}>
           <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
           {statusLabel}
         </span>
@@ -96,14 +96,14 @@ export function QuoteCard({
       <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-4 pb-3.5 pt-3.5">
         <div className="min-w-0">
           <p className="col-head">{t("pass.from")}</p>
-          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">{current.origin}</p>
+          <p className="display mt-1 truncate text-[25px] leading-tight text-slate-50">{current.origin}</p>
         </div>
-        <div className="pb-1.5 text-[15px] text-sunset-400" aria-hidden="true">
+        <div className="pb-1.5 text-[16px] text-sunset-400" aria-hidden="true">
           →
         </div>
         <div className="min-w-0 text-right">
           <p className="col-head">{t("pass.to")}</p>
-          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">
+          <p className="display mt-1 truncate text-[25px] leading-tight text-slate-50">
             {current.destination}
           </p>
         </div>
@@ -114,7 +114,7 @@ export function QuoteCard({
       </div>
 
       <div className="px-4 pb-3">
-        <dl className="space-y-2 text-[12.5px]">
+        <dl className="space-y-2 text-[13.5px]">
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
             <dt className="col-head">{t("pass.departure")}</dt>
             <dd className="mono text-slate-300 sm:text-right">
@@ -145,11 +145,11 @@ export function QuoteCard({
             <p className="col-head">
               {current.passengers.length > 1 ? t("quote.orderTotal") : t("quote.totalPrice")}
             </p>
-            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
+            <p className="mono mt-0.5 text-[29px] leading-none text-sunset-600">
               {formatUsd(current.passengers.length > 1 ? current.totalPriceUsd : current.priceUsd)}
             </p>
             {current.passengers.length > 1 && (
-              <p className="mono mt-1 text-[11.5px] text-ink-600">
+              <p className="mono mt-1 text-[12.5px] text-ink-600">
                 {formatUsd(current.priceUsd)} × {current.passengers.length}
               </p>
             )}
@@ -162,7 +162,7 @@ export function QuoteCard({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-ink-900/15 pt-2.5">
           {current.status === "pending" ? (
             <>
-              <span className="text-[11px] uppercase tracking-[0.14em] text-ink-600">
+              <span className="text-[12px] uppercase tracking-[0.14em] text-ink-600">
                 {t("quote.expires")}
               </span>
               {readOnly ? null : (
@@ -172,17 +172,17 @@ export function QuoteCard({
               )}
             </>
           ) : current.status === "booked" ? (
-            <span className="mono text-[12px] text-ink-700">
+            <span className="mono text-[13px] text-ink-700">
               {ticketId ?? t("quote.confirmed")}
             </span>
           ) : (
-            <span className="text-[12px] text-ink-600">{t("quote.expired")}</span>
+            <span className="text-[13px] text-ink-600">{t("quote.expired")}</span>
           )}
         </div>
       </div>
 
       {error && (
-        <p className="border-t border-white/10 px-4 py-2 text-[12px] text-rose-300">{error}</p>
+        <p className="border-t border-white/10 px-4 py-2 text-[13px] text-rose-300">{error}</p>
       )}
     </article>
   );

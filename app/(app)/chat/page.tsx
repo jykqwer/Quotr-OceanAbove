@@ -156,7 +156,7 @@ export default function ChatPage() {
         <header className="flex items-center gap-3 border-b border-white/10 px-4 py-2">
           <span className="col-head hidden shrink-0 sm:inline">{t("chat.title")}</span>
           <span className="hidden h-3 w-px bg-white/10 sm:block" aria-hidden="true" />
-          <h1 className="min-w-0 flex-1 truncate text-[13px] text-slate-200">
+          <h1 className="min-w-0 flex-1 truncate text-[14px] text-slate-200">
             {active?.title ?? t("chat.newChat")}
           </h1>
           <Link href="/conversations" className="btn-quiet shrink-0 lg:hidden" title={t("chat.allConversations")}>
@@ -167,11 +167,11 @@ export default function ChatPage() {
 
         <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           {threadLoading && messages.length === 0 ? (
-            <p className="py-16 text-center text-[12px] text-slate-600">{t("common.loading")}</p>
+            <p className="py-16 text-center text-[13px] text-slate-600">{t("common.loading")}</p>
           ) : isEmpty ? (
             <div className="mx-auto flex h-full max-w-md flex-col justify-center">
               <p className="col-head">{t("chat.emptyTitle")}</p>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-slate-400">{t("chat.emptyHint")}</p>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-slate-400">{t("chat.emptyHint")}</p>
               <ul className="mt-5 divide-y divide-white/5 border-y border-white/5">
                 {suggestions[lang].map((suggestion) => (
                   <li key={suggestion}>
@@ -181,8 +181,8 @@ export default function ChatPage() {
                       onClick={() => void handleSend(suggestion)}
                       className="group flex w-full items-center gap-2 py-2 text-left disabled:opacity-40"
                     >
-                      <span aria-hidden="true" className="mono text-[11px] text-sunset-500/70">▸</span>
-                        <span className="flex-1 text-[13px] text-slate-300 transition-colors group-hover:text-sunset-200">
+                      <span aria-hidden="true" className="mono text-[12px] text-sunset-500/70">▸</span>
+                        <span className="flex-1 text-[14px] text-slate-300 transition-colors group-hover:text-sunset-200">
                         {suggestion}
                       </span>
                     </button>
@@ -198,18 +198,18 @@ export default function ChatPage() {
               {sending && (
                 <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-4">
                   <div className="flex items-center gap-2 sm:block sm:w-12 sm:shrink-0 sm:pt-0.5 sm:text-right">
-                    <p className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-sunset-300">OA</p>
+                    <p className="text-[11.5px] font-medium uppercase tracking-[0.16em] text-sunset-300">OA</p>
                   </div>
                   <div className="min-w-0 flex-1 border-l border-sunset-500/45 pl-3">
                     {live && live.text.length > 0 ? (
-                      <p className="whitespace-pre-line break-words text-[14px] leading-relaxed text-slate-200">
+                      <p className="whitespace-pre-line break-words text-[15px] leading-relaxed text-slate-200">
                         {live.text}
                         <span aria-hidden="true" className="ml-0.5 animate-blink text-sunset-400">
                           ▍
                         </span>
                       </p>
                     ) : (
-                      <p className="mono text-[11px] uppercase tracking-[0.16em] text-slate-600 animate-blink">
+                      <p className="mono text-[12px] uppercase tracking-[0.16em] text-slate-600 animate-blink">
                         {t("chat.thinking")}
                       </p>
                     )}
@@ -222,7 +222,7 @@ export default function ChatPage() {
         </div>
 
         <div className="border-t border-white/10 p-3">
-          {error && <p className="mb-2 text-[12px] text-rose-300">{error}</p>}
+          {error && <p className="mb-2 text-[13px] text-rose-300">{error}</p>}
           <ChatComposer
             onSend={handleSend}
             disabled={sending}

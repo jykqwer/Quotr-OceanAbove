@@ -21,13 +21,13 @@ export function MessageBubble({
     <div className="flex flex-col gap-1.5 animate-rise sm:flex-row sm:gap-4">
       <div className="flex items-center gap-2 sm:block sm:w-12 sm:shrink-0 sm:pt-0.5 sm:text-right">
         <p
-          className={`text-[10.5px] font-medium uppercase tracking-[0.16em] ${
+          className={`text-[11.5px] font-medium uppercase tracking-[0.16em] ${
             isUser ? "text-slate-500" : "text-sunset-300"
           }`}
         >
           {isUser ? t("chat.you") : "OA"}
         </p>
-        <p className="mono text-[10.5px] text-slate-700 sm:mt-0.5">
+        <p className="mono text-[11.5px] text-slate-700 sm:mt-0.5">
           {formatDateTime(message.createdAt, lang)}
         </p>
       </div>
@@ -38,7 +38,7 @@ export function MessageBubble({
         }`}
       >
         <p
-          className={`whitespace-pre-line break-words text-[14px] leading-relaxed ${
+          className={`whitespace-pre-line break-words text-[15px] leading-relaxed ${
             isUser ? "text-slate-300" : "text-slate-200"
           }`}
         >

@@ -42,8 +42,8 @@ export default function TicketsPage() {
     <div className="space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-[20px] font-medium tracking-tight text-slate-100">{t("tickets.title")}</h1>
-          <p className="mt-1 text-[13px] text-slate-500">{t("tickets.subtitle")}</p>
+          <h1 className="text-[22px] font-medium tracking-tight text-slate-100">{t("tickets.title")}</h1>
+          <p className="mt-1 text-[14px] text-slate-500">{t("tickets.subtitle")}</p>
         </div>
         <Link href="/" className="btn-ghost">
           {t("tickets.bookAgain")}
@@ -62,13 +62,13 @@ export default function TicketsPage() {
       </dl>
 
       {loading ? (
-        <p className="py-16 text-center text-[12px] text-slate-600">{t("common.loading")}</p>
+        <p className="py-16 text-center text-[13px] text-slate-600">{t("common.loading")}</p>
       ) : error ? (
-        <p className="py-16 text-center text-[12px] text-rose-300">{error}</p>
+        <p className="py-16 text-center text-[13px] text-rose-300">{error}</p>
       ) : tickets.length === 0 ? (
         <div className="border border-white/10 bg-abyss-900 px-6 py-16 text-center">
           <p className="col-head">{t("tickets.empty")}</p>
-          <p className="mx-auto mt-2 max-w-sm text-[13px] text-slate-500">{t("tickets.emptyHint")}</p>
+          <p className="mx-auto mt-2 max-w-sm text-[14px] text-slate-500">{t("tickets.emptyHint")}</p>
           <Link href="/" className="btn-primary mt-5">
             {t("common.startChat")}
           </Link>
@@ -103,8 +103,8 @@ function Stat({
   return (
     <div className="px-4 py-3">
       <dt className="col-head">{label}</dt>
-      <dd className={`mono mt-1.5 text-[17px] ${accent ? "text-sand" : "text-slate-100"}`}>{value}</dd>
-      {note && <dd className="mono mt-0.5 text-[11px] text-slate-600">{note}</dd>}
+      <dd className={`mono mt-1.5 text-[18px] ${accent ? "text-sand" : "text-slate-100"}`}>{value}</dd>
+      {note && <dd className="mono mt-0.5 text-[12px] text-slate-600">{note}</dd>}
     </div>
   );
 }

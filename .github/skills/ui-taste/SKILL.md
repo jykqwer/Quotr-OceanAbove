@@ -60,10 +60,11 @@ Balance rule: **warm ground, one ember action.** If the page reads cold at arm's
 
 ## Typography
 
-- Micro-label (`col-head`): 11px, uppercase, `tracking-[0.18em]`, `text-slate-500/600`. **Never go below 10px** — a 9px monospace label was unreadable on a laptop and had to be raised a full step; do not introduce 9px again.
-- Body: 13–14px, `leading-relaxed`, `text-slate-300`.
-- Table cells that hold a number, date or price are `whitespace-nowrap`: a wrapped `11,229.09` / `km` reads as two different facts.
-- **City names on a pass use `display` (serif) at 23px** — the single editorial voice in an otherwise monospaced document. Never uppercase, never translated.
+- Micro-label (`col-head`): 12.5px, uppercase, `tracking-[0.18em]`, `text-slate-500/600`. **Never go below 11px** — 9px monospace labels proved unreadable on a laptop, and the whole scale has since been raised twice (10.5 → 11.5 → 12.5); do not introduce anything smaller again.
+- Body: 14–15px, `leading-relaxed`, `text-slate-300`. Fields 16px, buttons 15px.
+- Table cells that hold a number, date or price are `whitespace-nowrap`: a wrapped `11,229.09` / `km` reads as two different facts. Numeric columns are sized for the longest English string, not the Chinese one — "Oct 27, 10:06 PM" is the widest thing a date cell must hold.
+- **City names on a pass use `display` (serif) at 25px** — the single editorial voice in an otherwise monospaced document. Never uppercase, never translated.
+- Page titles 22px; the booking-desk headline 28px; the quote total 29px. Those display sizes rise 2px per type step (everything ≤19px rises 1px) so the hierarchy gaps never shrink.
 - **Every number, code, time, distance and id uses `mono`.**
 - Amounts are never grey: gold on dark, coral ink on paper.
 - Max ~65 characters per line; never centre a paragraph.

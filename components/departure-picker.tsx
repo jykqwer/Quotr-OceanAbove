@@ -156,7 +156,7 @@ export function DeparturePicker({
             className="animate-fade overflow-hidden rounded-lg border border-white/15 bg-abyss-950 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
           >
           <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
-            <span className="text-[13px] text-slate-200">{formatMonthYear(month, lang)}</span>
+            <span className="text-[14px] text-slate-200">{formatMonthYear(month, lang)}</span>
             <span className="flex items-center gap-1">
               <MonthButton label={t("home.previousMonth")} onClick={() => setMonth(addMonths(month, -1))}>
                 ‹
@@ -173,7 +173,7 @@ export function DeparturePicker({
                 {weekdays.map((day) => (
                   <span
                     key={day}
-                    className="mono pb-1 text-center text-[10.5px] uppercase tracking-[0.08em] text-slate-600"
+                    className="mono pb-1 text-center text-[11.5px] uppercase tracking-[0.08em] text-slate-600"
                   >
                     {day}
                   </span>
@@ -194,7 +194,7 @@ export function DeparturePicker({
                         selected.getDate() === day
                       }
                       onClick={() => pickDay(day)}
-                      className={`mono h-[26px] rounded text-[12.5px] tabular-nums transition-colors disabled:cursor-not-allowed disabled:text-slate-700 ${
+                      className={`mono h-[26px] rounded text-[13.5px] tabular-nums transition-colors disabled:cursor-not-allowed disabled:text-slate-700 ${
                         selected.getFullYear() === month.getFullYear() &&
                         selected.getMonth() === month.getMonth() &&
                         selected.getDate() === day
@@ -250,7 +250,7 @@ function MonthButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-7 w-7 items-center justify-center rounded border border-white/10 text-[13px] text-slate-400 transition-colors hover:border-sunset-400/50 hover:text-sunset-300"
+      className="flex h-7 w-7 items-center justify-center rounded border border-white/10 text-[14px] text-slate-400 transition-colors hover:border-sunset-400/50 hover:text-sunset-300"
     >
       {children}
     </button>
@@ -280,7 +280,7 @@ function TimeColumn({
             type="button"
             aria-pressed={value === selected}
             onClick={() => onPick(value)}
-            className={`mono block w-full py-1 text-center text-[12.5px] transition-colors ${
+            className={`mono block w-full py-1 text-center text-[13.5px] transition-colors ${
               value === selected
                 ? "bg-sunset-500/[0.18] text-sunset-100"
                 : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"

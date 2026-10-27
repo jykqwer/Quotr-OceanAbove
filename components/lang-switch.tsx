@@ -21,7 +21,7 @@ export function LangSwitch() {
             type="button"
             onClick={() => setLang(option.value)}
             aria-pressed={active}
-            className={`px-2 py-1 text-[11px] font-medium uppercase tracking-[0.12em] transition-colors ${
+            className={`px-2 py-1 text-[12px] font-medium uppercase tracking-[0.12em] transition-colors ${
               active
                 ? "bg-ocean-400 text-abyss-950"
                 : "text-slate-500 hover:bg-white/[0.05] hover:text-slate-300"
