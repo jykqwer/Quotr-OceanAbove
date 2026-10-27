@@ -1,22 +1,28 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 
 /**
- * Closes a popover on Escape or on a pointer press outside its root.
- * `close` must be stable (wrap it in useCallback) so the listeners are not
- * re-bound on every render.
+ * Closes a popover on Escape or on a pointer press outside every element it
+ * lives in. Pass both the trigger wrapper and the panel itself: the panel is
+ * portalled to `document.body`, so it is not inside the wrapper.
  */
 export function useDismiss(
   open: boolean,
-  rootRef: RefObject<HTMLElement | null>,
+  refs: RefObject<HTMLElement | null>[],
   close: () => void,
 ): void {
+  // Callers pass a fresh array literal each render; keep the latest one without
+  // re-binding the listeners on every keystroke.
+  const latest = useRef(refs);
+  latest.current = refs;
+
   useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (rootRef.current?.contains(event.target as Node)) return;
+      const target = event.target as Node;
+      if (latest.current.some((ref) => ref.current?.contains(target))) return;
       close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
@@ -29,5 +35,5 @@ export function useDismiss(
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [close, open, rootRef]);
+  }, [close, open]);
 }

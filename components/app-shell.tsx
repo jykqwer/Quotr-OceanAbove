@@ -39,7 +39,7 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-abyss-950">
-        <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4 sm:gap-6 sm:px-6">
+        <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4 sm:gap-6 sm:px-6 2xl:max-w-[1800px]">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <WaveMark className="h-7 w-7" />
             <span className="hidden flex-col leading-none sm:flex">
@@ -95,7 +95,7 @@ export function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6 sm:py-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6 sm:py-6 2xl:max-w-[1800px]">{children}</main>
     </div>
   );
 }

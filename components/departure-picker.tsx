@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ClockIcon } from "@/components/icons";
 import { formatClock, formatDayLabel, formatMonthYear, weekdayLabels } from "@/lib/format";
 import { useAnchoredPanel } from "@/lib/hooks/use-anchored-panel";
@@ -52,9 +53,10 @@ export function DeparturePicker({
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => startOfMonth(parseLocal(value)));
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
-  useDismiss(open, rootRef, close);
+  useDismiss(open, [rootRef, panelRef], close);
   const panelStyle = useAnchoredPanel(open, rootRef, 240, 336, 336);
 
   const selected = useMemo(() => parseLocal(value), [value]);
@@ -144,13 +146,15 @@ export function DeparturePicker({
         <ClockIcon className={`h-4 w-4 shrink-0 ${open ? "text-sunset-300" : "text-slate-500"}`} />
       </button>
 
-      {open && (
-        <div
-          role="dialog"
-          aria-label={label}
-          style={panelStyle}
-          className="animate-rise overflow-hidden rounded-lg border border-white/15 bg-abyss-950 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
-        >
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-label={label}
+            style={panelStyle}
+            className="animate-fade overflow-hidden rounded-lg border border-white/15 bg-abyss-950 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
+          >
           <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
             <span className="text-[13px] text-slate-200">{formatMonthYear(month, lang)}</span>
             <span className="flex items-center gap-1">
@@ -224,8 +228,9 @@ export function DeparturePicker({
               />
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

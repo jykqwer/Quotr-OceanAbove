@@ -82,6 +82,12 @@ const config: Config = {
           "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        // A popover appears in place: opacity only, so the anchored position
+        // never shifts by the animation's offset.
+        fade: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
         blink: {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.3" },
@@ -112,6 +118,7 @@ const config: Config = {
       },
       animation: {
         rise: "rise 0.24s ease-out both",
+        fade: "fade 0.14s ease-out both",
         blink: "blink 1.6s steps(2, end) infinite",
         flow: "flow 1.8s linear infinite",
         star: "star 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) infinite",

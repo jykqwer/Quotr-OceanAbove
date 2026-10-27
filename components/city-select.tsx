@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckIcon } from "@/components/icons";
 import { useAnchoredPanel } from "@/lib/hooks/use-anchored-panel";
 import { useDismiss } from "@/lib/hooks/use-dismiss";
@@ -45,13 +46,15 @@ export function CitySelect({
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
   }, []);
 
-  useDismiss(open, rootRef, close);
+  useDismiss(open, [rootRef, panelRef], close);
   const panelStyle = useAnchoredPanel(open, rootRef, 300, 264);
 
   const sections = useMemo(() => {
@@ -80,6 +83,9 @@ export function CitySelect({
     setQuery("");
     const index = flat.findIndex((name) => name === value);
     setActive(index >= 0 ? index : 0);
+    // Focus after the panel is in the DOM; `preventScroll` keeps the booking
+    // panel from scrolling under the pointer.
+    window.requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
   }, [flat, value]);
 
   const move = useCallback(
@@ -152,34 +158,36 @@ export function CitySelect({
         </span>
       </button>
 
-      {open && (
-        <div
-          style={panelStyle}
-          className="animate-rise overflow-hidden rounded-lg border border-white/15 bg-abyss-950 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
-        >
-          <div className="border-b border-white/10 p-2">
-            <input
-              autoFocus
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setActive(0);
-              }}
-              onKeyDown={onKeyDown}
-              placeholder={t("home.searchCity")}
-              aria-label={t("home.searchCity")}
-              aria-controls={`${id}-list`}
-              className="field py-1.5 text-[13px]"
-            />
-          </div>
-
+      {open &&
+        createPortal(
           <div
-            ref={listRef}
-            id={`${id}-list`}
-            role="listbox"
-            aria-label={label}
-            className="scroll-slim max-h-[182px] overflow-y-auto py-1"
+            ref={panelRef}
+            style={panelStyle}
+            className="animate-fade overflow-hidden rounded-lg border border-white/15 bg-abyss-950 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.9)]"
           >
+            <div className="border-b border-white/10 p-2">
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setActive(0);
+                }}
+                onKeyDown={onKeyDown}
+                placeholder={t("home.searchCity")}
+                aria-label={t("home.searchCity")}
+                aria-controls={`${id}-list`}
+                className="field py-1.5 text-[13px]"
+              />
+            </div>
+
+            <div
+              ref={listRef}
+              id={`${id}-list`}
+              role="listbox"
+              aria-label={label}
+              className="scroll-slim max-h-[182px] overflow-y-auto py-1"
+            >
             {sections.length === 0 ? (
               <p className="px-3 py-2 text-[12.5px] text-slate-600">{t("home.noCityMatch")}</p>
             ) : (
@@ -212,9 +220,10 @@ export function CitySelect({
                 </div>
               ))
             )}
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -34,6 +34,7 @@ export default function HomePage() {
   const [departure, setDeparture] = useState(defaultDepartureInput);
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
   /** Blank passengers means the account holder, so the placeholder names them. */
   const [userName, setUserName] = useState("");
 
@@ -206,6 +207,24 @@ export default function HomePage() {
     setDeparture(defaultDepartureInput());
   }
 
+  /** Continue in place: the thread opens in this panel, no trip to /chat. */
+  const openThread = useCallback(
+    async (id: string) => {
+      setOpening(true);
+      setError(null);
+      try {
+        const { conversation, messages: items } = await api.getConversation(id);
+        setConversationId(conversation.id);
+        setMessages(items);
+      } catch {
+        setError(t("chat.errorGeneric"));
+      } finally {
+        setOpening(false);
+      }
+    },
+    [t],
+  );
+
   const handleQuoteUpdated = useCallback((quote: Quote, ticket?: Ticket) => {
     setMessages((current) =>
       current.map((message) => (message.quote?.id === quote.id ? { ...message, quote } : message)),
@@ -221,13 +240,13 @@ export default function HomePage() {
   const inThread = messages.length > 0 || sending;
   const minDeparture = toLocalInput(new Date());
   const latest = conversations[0];
-  const recent = tickets.slice(0, 3);
+  const recent = tickets.slice(0, 8);
   const pinned = tickets.find((ticket) => ticket.id === pinnedId) ?? null;
   const highlight = hoverLegs ?? ticketLegs(pinned) ?? threadLegs(messages);
   const activeConversation = conversations.find((item) => item.id === conversationId) ?? null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-6.6rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-6.6rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="scroll-slim order-2 flex min-h-0 flex-col gap-4 overflow-y-auto lg:order-1">
         <div className="shrink-0">
           <NetworkMap network={network} highlight={highlight} />
@@ -366,7 +385,7 @@ export default function HomePage() {
           </>
         ) : (
           <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <div className="flex min-h-full flex-col">
+            <div className="my-auto flex min-h-full flex-col">
               <h1 className="display text-[26px] leading-tight text-slate-50">{t("home.headline")}</h1>
 
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-2">
@@ -490,7 +509,7 @@ export default function HomePage() {
               </button>
             </form>
 
-            <div className="my-4 mt-auto flex items-center gap-3">
+            <div className="my-4 flex items-center gap-3">
               <span className="h-px flex-1 bg-white/10" />
               <span className="text-[10.5px] uppercase tracking-[0.14em] text-slate-600">
                 {t("home.orAsk")}
@@ -525,9 +544,11 @@ export default function HomePage() {
                   <span className="col-head">{t("home.continue")}</span>
                   <ClockIcon className="h-3 w-3 text-slate-700" />
                 </div>
-                <Link
-                  href={`/chat?c=${latest.id}`}
-                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
+                <button
+                  type="button"
+                  onClick={() => void openThread(latest.id)}
+                  disabled={opening}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-white/[0.03] disabled:opacity-50"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13.5px] text-slate-200">{latest.title}</p>
@@ -537,7 +558,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-slate-600" />
-                </Link>
+                </button>
               </div>
             )}
             </div>
