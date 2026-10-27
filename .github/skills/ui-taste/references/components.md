@@ -153,14 +153,17 @@ Selects use `.select` with a `▾` marker; option groups reuse `map.statHubs` / 
 **Swap** sits *between* origin and destination (`sm:grid-cols-[1fr_auto_1fr]`, aligned to the bottom) and disappears
 entirely once a second city pair is added — swapping a multi-city trip is meaningless.
 
-**Departure** uses a native `datetime-local` (`.field mono`), defaults to tomorrow 09:00, and carries one hint line
-`Any time works — every flight is assumed available.` It never changes the price, so it must never look like a filter.
+**Departure** uses a native `datetime-local` (`.field mono`) and defaults to tomorrow 09:00. It never changes the
+price, so it must never look like a filter — and it carries **no hint line**: "every flight is assumed available"
+is our internal model, not something the passenger asked to read.
 
-**The composer's blurb belongs to the composer.** The line explaining "describe the trip in your own words…" sits
-directly above the input, under the "or ask in your own words" divider — not under the headline.
+**The composer's blurb belongs to the composer.** The line explaining the quote-then-ticket promise sits
+directly above the input, under the "or ask in your own words" divider — not under the headline. Keep it short
+enough to fit one line in the panel (`text-[12px]`, no `max-w-*`, **never `text-balance`**: balancing CJK copy
+splits it mid-word, e.g. 航 / 程).
 
 **Multi-city and passengers stay secondary.** Under the city pair sit a `Passengers` text field (11.5px `.field`,
-placeholder names, one hint line `Comma separated; leave blank for yourself`) and a dashed-border, quiet
+placeholder names, **no hint line** — an empty field quietly means the account holder) and a dashed-border, quiet
 `+ Add a leg` button that only grows to 3 extra pairs. Added pairs are indented with a 2px coral left rule,
 labelled `Leg 2` in mono 9px, and carry a text-only `Remove` on the right. The idle panel must still read as
 "one form", not as a builder.
@@ -225,13 +228,14 @@ A label, one sentence, one coral action. No illustration.
 - **All connections are quadratic curves** (`arcPath()`), including hub links, client connectors and highlighted routes.
 - Hubs are **squares**, cities are **dots**, both in pale `lamp` cream — they read as lights. Hover **or** selection turns either one ember and enlarges it; every dot is hoverable, not just hubs.
 - **Every city is clickable.** A hub reveals the cities it serves (dashed ember arcs, `animate-flow`); a non-hub reveals the hubs it flies to. Same gesture, symmetric result — never make ordinary cities look inert.
-- **Recent-ticket rows drive the map**: hovering a row previews its route as gold arcs; clicking pins it (row stays highlighted, map keeps the route). Endpoint nodes are gold dots, transfers are cream.
-- **The open conversation's route is persistent**: with a quote (pending or booked) in the thread, the map keeps drawing it under any hover/pin, and the footer says so.
+- **Recent-ticket rows drive the map**: hovering a row previews its route as gold arcs; clicking pins it (row stays highlighted, map keeps the route). Endpoint nodes are gold dots, transfers are cream. A preview outranks a pinned city — the row you are pointing at is the most recent intent.
+- **The open conversation's route is persistent**: with a quote (pending or booked) in the thread, the map keeps drawing it whenever nothing more specific is showing.
 - Counts sit top-right and are **buttons**: hovering `711 Cities` or `40 Hubs` opens a list panel with letter buckets (A–C, D–F, …) plus `All`, two columns, scrollable, no search box. Do not show a hub-link count here — two numbers only.
   Every name in the list is a **button**: clicking it selects that city on the map (same highlight as clicking its dot) and closes the list. A plain `<li>` is a dead end.
   The **Cities** list holds all 711 cities — hubs included, marked with the same cream square the legend uses (spokes are round dots) — so "711 Cities · 40 Hubs" reads as a subset, not two separate sets.
   The panel is wide and the trigger is small, so **it must not close on leaving the trigger**: it stays open while the pointer crosses the gap, closes when the pointer leaves the panel (with a ~220 ms grace), on `Escape`, or on a click outside. Panel background is opaque, never translucent, so the dots cannot read through the names.
-- Legend and state sit in the footer row; the honesty note gets its own line.
+- Legend and state sit in the footer row. No "abstract map, not real geography" footnote: it explains our data model, not the passenger's trip.
+- **Two highlights never share the map.** A pinned city and an active route are mutually exclusive: while a route is live (a hovered ticket row, or the open conversation's quote) the pinned city's arcs, dimming and tooltip step aside and the footer reads `Showing this route`; the pin returns when the route ends. Clicking a city (or its entry in the list) takes the map back and the route steps aside until the route changes — an explicit click must always outrank a passive route.
 - The hover tooltip flips below the point near the top and right-aligns past 55% width so it never clips. Non-hub tooltips name the direct hubs; hub tooltips give route/client counts.
 
 ## Ticket list (accordion)

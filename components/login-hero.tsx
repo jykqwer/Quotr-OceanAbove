@@ -48,10 +48,6 @@ export function LoginHero({ stats }: { stats: Network["stats"] }) {
           ))}
         </tbody>
       </table>
-
-      <p className="mono mt-6 text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
-        {t("map.note")}
-      </p>
     </section>
   );
 }

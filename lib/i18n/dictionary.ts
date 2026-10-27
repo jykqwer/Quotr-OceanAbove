@@ -141,7 +141,7 @@ const en = {
   "home.headline": "Where to?",
   "home.newBooking": "New booking",
   "home.subline":
-    "Describe the trip in your own words: every leg and transfer is quoted before anything books.",
+    "Every leg and transfer is quoted first, then ticketed.",
   "home.quickPrompts": "Examples",
   "home.continue": "Pick up where you left off",
   "home.continueHint": "Your last conversation is waiting.",
@@ -167,10 +167,8 @@ const en = {
   "home.legFrom": "from {city}",
   "home.addLegHint": "Pick where the previous leg lands first.",
   "home.passengers": "Passengers",
-  "home.passengersHint": "Comma separated; leave blank for yourself",
   "home.passengersPlaceholder": "Ada, Grace Hopper",
   "home.departure": "Departure",
-  "home.departureHint": "Any time works — every flight is assumed available.",
   "home.departureError": "That departure time cannot be read.",
   "home.noServiceGroup": "No service",
 
@@ -198,7 +196,6 @@ const en = {
   "map.directHubs": "{count} direct hubs",
   "map.filterLabel": "Filter by initial",
   "map.routeOf": "Route of the open conversation",
-  "map.note": "Drawn from the coordinates in locations.db — an abstract map, not real geography.",
 
   "footer.note": "Price = distance × 0.13 USD · routes and fares computed from locations.db",
 } as const;
@@ -345,7 +342,7 @@ const zh: Dictionary = {
 
   "home.headline": "飞往哪里？",
   "home.newBooking": "新建订票",
-  "home.subline": "用你自己的话描述行程：每一段航程与中转都会先报价，再出票。",
+  "home.subline": "每一段航程与中转都会先报价，再出票。",
   "home.quickPrompts": "示例",
   "home.continue": "继续上次对话",
   "home.continueHint": "上次的对话还在。",
@@ -371,10 +368,8 @@ const zh: Dictionary = {
   "home.legFrom": "从 {city} 出发",
   "home.addLegHint": "先选好上一程的到达城市。",
   "home.passengers": "乘客",
-  "home.passengersHint": "逗号分隔；留空则为自己",
   "home.passengersPlaceholder": "Ada，Grace Hopper",
   "home.departure": "出发时间",
-  "home.departureHint": "任意时间均可 —— 我们假设所有航班都可选。",
   "home.departureError": "无法识别该出发时间。",
   "home.noServiceGroup": "暂未通航",
 
@@ -402,7 +397,6 @@ const zh: Dictionary = {
   "map.directHubs": "{count} 个直飞枢纽",
   "map.filterLabel": "按首字母筛选",
   "map.routeOf": "当前会话的航线",
-  "map.note": "按 locations.db 中的坐标绘制 —— 抽象地图，并非真实地理。",
 
   "footer.note": "价格 = 距离 × 0.13 USD · 路线与票价均由 locations.db 计算",
 };

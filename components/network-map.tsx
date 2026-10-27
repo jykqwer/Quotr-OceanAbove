@@ -77,6 +77,9 @@ export function NetworkMap({
   const { t } = useI18n();
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  // A pinned city and an active route both want the whole map. The route wins
+  // while it is live; clicking a city takes the map back until the route changes.
+  const [routeYieldedFor, setRouteYieldedFor] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState<"cities" | "hubs" | null>(null);
   const [bucket, setBucket] = useState("all");
   const closeTimer = useRef<number | null>(null);
@@ -150,9 +153,32 @@ export function NetworkMap({
     return { byName, clients, degree };
   }, [network]);
 
-  const toggle = useCallback((name: string) => {
-    setSelected((current) => (current === name ? null : name));
-  }, []);
+  const highlightKey = useMemo(
+    () => (highlight ?? []).map((leg) => `${leg.from}|${leg.to}`).join(">"),
+    [highlight],
+  );
+
+  const toggle = useCallback(
+    (name: string) => {
+      const next = selected === name ? null : name;
+      setSelected(next);
+      setRouteYieldedFor(next ? highlightKey : null);
+    },
+    [highlightKey, selected],
+  );
+
+  const selectCity = useCallback(
+    (name: string) => {
+      setSelected(name);
+      setRouteYieldedFor(name ? highlightKey : null);
+    },
+    [highlightKey],
+  );
+
+  // A hover-only route vanishes on mouse-out, so its yield must not outlive it.
+  useEffect(() => {
+    if (!highlightKey) setRouteYieldedFor(null);
+  }, [highlightKey]);
 
   const highlightPoints = useMemo(() => {
     if (!index || !highlight || highlight.length === 0) return [] as NetworkCity[];
@@ -166,9 +192,14 @@ export function NetworkMap({
     return points;
   }, [highlight, index]);
 
+  // An active route borrows the map: the pinned city steps aside until the user
+  // clicks a city again, so the two highlights never compete for the same pixels.
+  const routeActive = highlightPoints.length > 1 && routeYieldedFor !== highlightKey;
+  const activeCity = routeActive ? null : selected;
+
   const selectedCity = useMemo(
-    () => (index && selected ? index.byName.get(selected) : undefined),
-    [index, selected],
+    () => (index && activeCity ? index.byName.get(activeCity) : undefined),
+    [activeCity, index],
   );
 
   // Hubs light up the cities they serve; a city lights up the hubs it flies to.
@@ -209,7 +240,7 @@ export function NetworkMap({
     );
   }
 
-  const focus = hovered ?? selected;
+  const focus = hovered ?? activeCity;
   const focusCity = focus ? index.byName.get(focus) : undefined;
   const focusPoint = focusCity ? toPercent(focusCity.x, focusCity.y) : null;
   const listNames = listOpen === "hubs" ? hubNames : cityNames;
@@ -305,14 +336,14 @@ export function NetworkMap({
               ) : (
                 <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px]">
                   {visibleNames.map((name) => {
-                    const isActive = selected === name;
+                    const isActive = activeCity === name;
                     const isHub = index.byName.get(name)?.isHub ?? false;
                     return (
                       <li key={name}>
                         <button
                           type="button"
                           onClick={() => {
-                            setSelected(name);
+                            selectCity(name);
                             setListOpen(null);
                           }}
                           aria-pressed={isActive}
@@ -369,14 +400,14 @@ export function NetworkMap({
               const a = index.byName.get(link.a);
               const b = index.byName.get(link.b);
               if (!a || !b) return null;
-              const active = selected !== null && (link.a === selected || link.b === selected);
+              const active = activeCity !== null && (link.a === activeCity || link.b === activeCity);
               return (
                 <path
                   key={`${link.a}|${link.b}`}
                   d={arcPath(a, b, 0.16)}
                   className={active ? "animate-flow stroke-sunset-400" : "stroke-ocean-400"}
                   strokeWidth={active ? 16 : 8}
-                  strokeOpacity={active ? 0.95 : selected ? 0.07 : 0.32}
+                  strokeOpacity={active ? 0.95 : activeCity ? 0.07 : 0.32}
                   strokeDasharray={active ? "10 16" : undefined}
                   strokeLinecap="round"
                 />
@@ -390,7 +421,7 @@ export function NetworkMap({
               const [cx, cy] = toSvg(city.x, city.y);
               const isRelated = related?.has(city.name) ?? false;
               const isFocus = city.name === focus;
-              const isSelected = city.name === selected;
+              const isSelected = city.name === activeCity;
               return (
                 <circle
                   key={city.name}
@@ -446,7 +477,7 @@ export function NetworkMap({
             {network.cities.map((city) => {
               if (!city.isHub) return null;
               const [cx, cy] = toSvg(city.x, city.y);
-              const isSelected = city.name === selected;
+              const isSelected = city.name === activeCity;
               const isFocus = city.name === focus;
               const size = isSelected || isFocus ? 148 : 92;
               return (
@@ -462,7 +493,7 @@ export function NetworkMap({
             })}
           </g>
 
-          {highlightPoints.length > 1 && (
+          {routeActive && (
             <g fill="none" pointerEvents="none">
               {highlightPoints.slice(0, -1).map((point, i) => (
                 <path
@@ -608,7 +639,10 @@ export function NetworkMap({
               <span className="text-slate-200">{selectedCity.name}</span>
               <button
                 type="button"
-                onClick={() => setSelected(null)}
+                onClick={() => {
+                  setSelected(null);
+                  setRouteYieldedFor(null);
+                }}
                 className="rounded border border-white/15 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.12em] text-slate-400 hover:bg-white/[0.05]"
               >
                 {t("map.clear")}
@@ -618,10 +652,9 @@ export function NetworkMap({
             <span className="text-sand">{t("map.showingRoute")}</span>
           ) : (
             t("map.hint")
-          )}        </span>
+          )}
+        </span>
       </div>
-
-      <p className="border-t border-white/10 px-4 py-1.5 text-[10px] text-slate-600">{t("map.note")}</p>
     </section>
   );
 }

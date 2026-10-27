@@ -435,7 +435,6 @@ export default function HomePage() {
                     value={passengers}
                     onChange={(event) => setPassengers(event.target.value)}
                     placeholder={t("home.passengersPlaceholder")}
-                    aria-describedby="passengers-hint"
                   />
                 </div>
                 <button
@@ -456,9 +455,6 @@ export default function HomePage() {
                   + {t("home.addLeg")}
                 </button>
               </div>
-              <p id="passengers-hint" className="text-[10px] leading-relaxed text-slate-600">
-                {t("home.passengersHint")}
-              </p>
 
               <div className="min-w-0">
                 <label htmlFor="departure" className="col-head mb-1 block">
@@ -471,12 +467,8 @@ export default function HomePage() {
                   value={departure}
                   min={minDeparture}
                   onChange={(event) => setDeparture(event.target.value)}
-                  aria-describedby="departure-hint"
                 />
               </div>
-              <p id="departure-hint" className="text-[10px] leading-relaxed text-slate-600">
-                {t("home.departureHint")}
-              </p>
 
               <button
                 type="submit"
@@ -496,9 +488,7 @@ export default function HomePage() {
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
-            <p className="max-w-[42ch] text-balance text-[12px] leading-relaxed text-slate-500">
-              {t("home.subline")}
-            </p>
+            <p className="text-[12px] leading-relaxed text-slate-500">{t("home.subline")}</p>
             <div className="mt-2">
               <ChatComposer onSend={send} disabled={sending} />
             </div>
