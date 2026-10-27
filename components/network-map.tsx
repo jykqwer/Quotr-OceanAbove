@@ -304,12 +304,30 @@ export function NetworkMap({
               {visibleNames.length === 0 ? (
                 <p className="py-2 text-center text-[10.5px] text-slate-600">{t("map.listEmpty")}</p>
               ) : (
-                <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-400">
-                  {visibleNames.map((name) => (
-                    <li key={name} className="truncate" title={name}>
-                      {name}
-                    </li>
-                  ))}
+                <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px]">
+                  {visibleNames.map((name) => {
+                    const isActive = selected === name;
+                    return (
+                      <li key={name}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelected(name);
+                            setListOpen(null);
+                          }}
+                          aria-pressed={isActive}
+                          title={`${name} · ${t("map.listHint")}`}
+                          className={`w-full truncate rounded px-1 py-0.5 text-left transition-colors ${
+                            isActive
+                              ? "bg-sunset-500/15 text-sunset-200"
+                              : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
+                          }`}
+                        >
+                          {name}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

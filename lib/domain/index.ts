@@ -19,7 +19,7 @@ export {
   type Itinerary,
   type JourneyRequest,
 } from "@/lib/domain/itinerary";
-export { findCityMentions, nearestServiced, normalizeName, resolveCity, type CityMention, type Resolution } from "@/lib/domain/resolve";
+export { findCityMentions, nearestServiced, normalizeName, resolveCity, suggestCities, type CityMention, type Resolution } from "@/lib/domain/resolve";
 export { RouteInvariantError, isDirectFlight, verifyRoute } from "@/lib/domain/verify";
 
 let cached: DomainGraph | null = null;

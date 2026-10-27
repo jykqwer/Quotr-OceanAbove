@@ -137,13 +137,35 @@ test("resolve_city reports ambiguity instead of picking a city", async () => {
   assert.ok((payload.candidates?.length ?? 0) > 1);
 });
 
-test("resolve_city reports the nearest served city for an unserved one", async () => {
-  const outcome = await runTool("resolve_city", { text: "Abu Dhabi" }, ctx(), {});
-  const payload = outcome.payload as { status: string; nearest: { city: string; distance: string } };
+test("an unserved city is reported, then the nearest served city is looked up separately", async () => {
+  const resolved = await runTool("resolve_city", { text: "Abu Dhabi" }, ctx(), {});
+  const resolvedPayload = resolved.payload as { status: string };
+  assert.equal(resolvedPayload.status, "no_service");
 
+  // The nearest city is its own tool call, so the reasoning shows in the trace.
+  const nearest = await runTool("nearest_served_city", { city: "Abu Dhabi" }, ctx(), {});
+  const payload = nearest.payload as {
+    status: string;
+    nearest: { city: string; distance: string };
+    basis: string;
+  };
+  assert.equal(nearest.ok, true);
   assert.equal(payload.status, "no_service");
   assert.equal(payload.nearest.city, "Tirana");
   assert.equal(payload.nearest.distance, "350.89 km");
+  assert.match(payload.basis, /locations\.db/);
+});
+
+test("a city outside the dataset gets suggestions, never a made-up distance", async () => {
+  const resolved = await runTool("resolve_city", { text: "New York City" }, ctx(), {});
+  const payload = resolved.payload as { status: string; suggestions: string[] };
+  assert.equal(payload.status, "not_found");
+  assert.deepEqual(payload.suggestions.slice(0, 1), ["New York"]);
+
+  const nearest = await runTool("nearest_served_city", { city: "Atlantis" }, ctx(), {});
+  const nearestPayload = nearest.payload as { status: string; nearest?: unknown };
+  assert.equal(nearestPayload.status, "no_coordinates");
+  assert.equal(nearestPayload.nearest, undefined);
 });
 
 test("direct_destinations answers \"where does this city fly\"", async () => {

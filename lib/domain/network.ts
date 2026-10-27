@@ -12,9 +12,9 @@ export interface DirectDestinations {
 /**
  * Everywhere one city flies to without changing planes.
  *
- * A hub reaches other hubs through `hub_links` plus the spoke cities that list
- * it in `connected_hubs`; a spoke reaches exactly the hubs it lists. Nothing
- * else is a direct flight, so this mirrors `isDirectFlight`.
+ * A hub reaches its **directly linked** hubs plus the spoke cities that list it
+ * in `connected_hubs`; a spoke reaches exactly the hubs it lists. Nothing else
+ * is a direct flight, so this mirrors `isDirectFlight`.
  */
 export function directDestinations(graph: DomainGraph, cityName: string): DirectDestinations | null {
   const city = graph.cities.get(cityName);
@@ -23,10 +23,7 @@ export function directDestinations(graph: DomainGraph, cityName: string): Direct
   const destinations = new Set<string>();
 
   if (city.isHub) {
-    for (const other of graph.hubs) {
-      if (other === city.name) continue;
-      if (graph.hubDistance.get(city.name)?.has(other)) destinations.add(other);
-    }
+    for (const other of graph.hubLinks.get(city.name) ?? []) destinations.add(other);
     for (const candidate of graph.cities.values()) {
       if (candidate.isHub) continue;
       if (candidate.hubs.includes(city.name)) destinations.add(candidate.name);

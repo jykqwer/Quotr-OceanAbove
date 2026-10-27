@@ -152,6 +152,7 @@ Next.js 15 App Router (localhost:3000)
 7. ~~会话检索与分页、多程 / 多乘客~~ ✅ 见 P4 落地记录
 8. ~~交互打磨（出发时间、地图交互、客票折叠）~~ ✅ 见 P5 落地记录
 9. ~~缺陷修复（城市名单悬浮、文案换行、回复语言与直飞查询）~~ ✅ 见 P6 记录
+10. ~~需求复核：直飞邻接缺陷、无服务城市两步流程、名单可点击、prompt history~~ ✅ 见 P7 记录
 
 ### P1 落地记录
 
@@ -242,4 +243,21 @@ Next.js 15 App Router (localhost:3000)
   实测：`New York 可直飞 65 个城市，其中 39 个是枢纽…`，工具轨迹可复核。
 - 测试：新增域用例「直飞目的地与一次飞行判定一致」与 Agent 用例「direct_destinations」
   「回复语言由界面决定」，合计 57 例。
+
+### P7 落地记录（需求复核发现的真实缺陷）
+
+- **直飞判定用错了矩阵**：`isDirectFlight` 对枢纽↔枢纽读的是 Floyd–Warshall 的**全对最短路**，
+  于是「任意两个枢纽都算直飞」。后果有两个：`verifyRoute` 抓不到跨多跳的枢纽航段；
+  `direct_destinations` 把 New York 说成 65 个目的地 / 39 个枢纽。现在 `DomainGraph` 增加
+  `hubLinks`（仅 `hub_links` 的邻接集合），判定与统计都改用它 —— New York 的真实直飞是
+  **7 个枢纽 + 26 个城市 = 33 个**。回归测试锁住「未直连的枢纽对必须判为否」。
+- **无服务城市的两步流程**：`resolve_city` 只回 `no_service`，把「找最近的可用城市」拆成独立工具
+  `nearest_served_city`，因此对话的工具轨迹里能看到这一步（resolve_city → nearest_served_city），
+  回答里带距离与依据（`locations.db` 坐标）。
+- **不在数据集里的城市**：数据集没有该城市 = 没有坐标，**绝不编造距离**。`resolve_city` 回
+  `not_found` 并给出最相近的已知城市（`suggestCities`，如 "new york city" → "New York"），
+  `nearest_served_city` 在这种情况下只回 `no_coordinates`，不返回任何距离。
+- **城市名单可点击**：名单每一项都是按钮，点击即在地图上选中该城市（与点城市点等价），并关闭名单。
+- **交付物补齐**：`prompt history/` 目录与去密钥说明。
+- 测试：62 例。
 

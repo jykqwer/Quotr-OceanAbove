@@ -108,7 +108,7 @@ locations.db                 唯一数据源（只读）
 | 文件 | 职责 |
 |---|---|
 | `llm.ts` | OpenAI 兼容客户端（DeepSeek），SSE 流式解析，工具调用按 index 拼接参数碎片 |
-| `tools.ts` | 5 个工具：`resolve_city` / `find_itinerary` / `direct_destinations` / `create_booking_quote` / `list_my_tickets`。返回值里带**已格式化的展示字符串**，模型只需照抄 |
+| `tools.ts` | 6 个工具：`resolve_city` / `nearest_served_city` / `find_itinerary` / `direct_destinations` / `create_booking_quote` / `list_my_tickets`。返回值里带**已格式化的展示字符串**，模型只需照抄 |
 | `loop.ts` | 系统提示词 + 循环 + 降级；工具结果回灌给模型 |
 | `guard.ts` | 两道守卫：数字白名单、出票话术 |
 | `reply.ts` | 确定性兜底（无 key / 超时 / 守卫拒绝时使用），同样只用引擎数字 |
@@ -122,8 +122,15 @@ locations.db                 唯一数据源（只读）
 
 **回复语言由界面决定**：`systemPromptFor(lang)` 会把「用简体中文作答 / answer in English」写进系统提示词，
 因此中文提问不会再冒出英文回答（城市名始终原样保留）。「纽约能直飞哪些城市」这类问题由
-`direct_destinations` 回答：枢纽列出它连的枢纽 + 以它为枢纽的城市，非枢纽列出它能直飞的枢纽，与
-`isDirectFlight` 同一套判定。
+`direct_destinations` 回答：枢纽列出**与它直连**的枢纽 + 以它为枢纽的城市（New York 是 7 + 26 = 33 个），
+非枢纽列出它能直飞的枢纽，判定与 `isDirectFlight` 同一套邻接规则。
+
+**没有服务的城市分两种情况**（都不会编造数据）：
+
+| 情况 | 行为 | 工具轨迹 |
+|---|---|---|
+| 数据集里有该城市但 `connected_hubs` 为空（10 个，如 Abu Dhabi） | 告知没有服务，并给出**最近的可飞城市**与距离（按 `locations.db` 坐标测量） | `resolve_city` → `nearest_served_city` |
+| 数据集里没有该城市（如 "New York City"） | 说明不在数据里，**不给距离**（没有坐标就无法测量），改为推荐最相近的已知城市 | `resolve_city`（返回 `suggestions`） |
 
 流式输出：`stream: true` 时接口返回 SSE（`user` / `step` / `delta` / `done` / `error`），前端边收边渲染文字与工具轨迹；`done` 里的最终消息会**覆盖**草稿，因此守卫兜底后的文案也会正确替换。非流式 JSON 仍保留，流打不开时客户端自动回退。
 
@@ -171,6 +178,12 @@ locations.db                 唯一数据源（只读）
 - 会话 Cookie 形如 `<sessionId>.<hmac>`，签名密钥来自 `SESSION_SECRET`（或自动生成到 `data/.session-secret`）；
   服务端只认 `sessions` 表里存在且未过期的行，登出即删行。
 - 登录 / 注册有固定窗口限流（登录 8 次/分钟，注册 5 次/10 分钟）。
+
+## 交付物
+
+- 代码 + [README.md](e:/MyProjects/Quotr/README.md)（运行方式）
+- 设计文档：[docs/PLAN.zh-CN.md](e:/MyProjects/Quotr/docs/PLAN.zh-CN.md)（架构、工具、数值正确性、确认机制、局限）+ [AGENTS.md](e:/MyProjects/Quotr/AGENTS.md)（不可协商的领域规则）
+- 原始会话：[prompt history/](e:/MyProjects/Quotr/prompt%20history/README.md)（已去密钥）
 
 ## 已知限制（本阶段）
 

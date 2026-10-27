@@ -5,6 +5,7 @@ import test from "node:test";
 import { loadNetwork } from "@/lib/db/locations";
 import { buildGraph } from "@/lib/domain/graph";
 import { directDestinations } from "@/lib/domain/network";
+import { nearestServiced, resolveCity, suggestCities } from "@/lib/domain/resolve";
 import {
   MAX_PASSENGERS,
   buildItinerary,
@@ -14,7 +15,7 @@ import {
   verifyItinerary,
 } from "@/lib/domain/itinerary";
 import { PRICE_PER_KM, round2 } from "@/lib/domain/pricing";
-import { findCityMentions, resolveCity } from "@/lib/domain/resolve";
+import { findCityMentions } from "@/lib/domain/resolve";
 import { findRoute } from "@/lib/domain/route";
 import { isDirectFlight, verifyRoute } from "@/lib/domain/verify";
 
@@ -273,6 +274,34 @@ test("verifyItinerary catches a tampered total", () => {
   );
 });
 
+test("a hub only flies to hubs it is actually linked to", () => {
+  // Regression: the all-pairs matrix used to make every hub pair look direct.
+  const unlinked: [string, string] | null = (() => {
+    for (const a of graph.hubs) {
+      for (const b of graph.hubs) {
+        if (a === b) continue;
+        if (!graph.hubLinks.get(a)?.has(b)) return [a, b];
+      }
+    }
+    return null;
+  })();
+  assert.ok(unlinked, "the hub graph is not complete");
+  const [a, b] = unlinked;
+  assert.equal(isDirectFlight(graph, a, b), false, `${a} → ${b} is two or more hops`);
+
+  const linked = [...(graph.hubLinks.get("New York") ?? [])][0];
+  assert.ok(linked);
+  assert.equal(isDirectFlight(graph, "New York", linked), true);
+
+  // New York's direct reach is its 7 hub links plus the 26 cities attached to it.
+  const newYork = directDestinations(graph, "New York");
+  assert.ok(newYork);
+  assert.equal(newYork.hubs.length, graph.hubLinks.get("New York")!.size);
+  assert.equal(newYork.hubs.length, 7);
+  assert.equal(newYork.cities.length, 33);
+  assert.ok(newYork.cities.every((name) => isDirectFlight(graph, "New York", name)));
+});
+
 test("direct destinations match the one-flight rule", () => {
   // A spoke reaches exactly the hubs it lists.
   const split = directDestinations(graph, "Split");
@@ -282,15 +311,33 @@ test("direct destinations match the one-flight rule", () => {
   assert.deepEqual(split.hubs, split.cities);
   assert.ok(split.cities.every((name) => isDirectFlight(graph, "Split", name)));
 
-  // A hub reaches other hubs plus the spokes that list it, and nothing else.
-  const newYork = directDestinations(graph, "New York");
-  assert.ok(newYork);
-  assert.equal(newYork.isHub, true);
-  assert.ok(newYork.hubs.length > 0);
-  assert.ok(newYork.cities.length > newYork.hubs.length);
-  assert.ok(newYork.cities.every((name) => isDirectFlight(graph, "New York", name)));
-  assert.ok(!newYork.cities.includes("New York"));
   assert.equal(directDestinations(graph, "Nowhere City"), null);
+});
+
+test("a misspelt or unknown city suggests the closest known names", () => {
+  assert.deepEqual(suggestCities(graph, "New York City").slice(0, 1), ["New York"]);
+  assert.ok(suggestCities(graph, "Santiago de").slice(0, 3).includes("Santiago de Compostela"));
+  assert.ok(suggestCities(graph, "xyzzy").length === 0);
+  // A city we do hold a row for is never "unknown".
+  assert.equal(resolveCity(graph, "New York").status, "found");
+});
+
+test("an unserved city recommends the nearest served one, with a real distance", () => {
+  const abuDhabi = resolveCity(graph, "Abu Dhabi");
+  assert.equal(abuDhabi.status, "no_service");
+  if (abuDhabi.status !== "no_service") return;
+  assert.ok(Number.isFinite(abuDhabi.nearest.distanceKm));
+  assert.ok(abuDhabi.nearest.distanceKm > 0);
+  // The replacement must be serviced, and must not be the city itself.
+  assert.notEqual(abuDhabi.nearest.city, "Abu Dhabi");
+  const replacement = graph.cities.get(abuDhabi.nearest.city)!;
+  assert.ok(replacement.isHub || replacement.hubs.length > 0);
+});
+
+test("a city that is not in the dataset has no coordinates and no distance", () => {
+  const unknown = resolveCity(graph, "Atlantis");
+  assert.equal(unknown.status, "not_found");
+  assert.equal(nearestServiced(graph, "Atlantis"), null);
 });
 
 test("a departure is required, readable and never changes the fare", () => {

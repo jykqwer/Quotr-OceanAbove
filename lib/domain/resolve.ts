@@ -89,8 +89,43 @@ export function resolveCity(graph: DomainGraph, query: string): Resolution {
   return { status: "not_found", query };
 }
 
-export interface CityMention {
-  /** The matched text, e.g. "San Jose". */
+/**
+ * Names the user may have meant, for a city that is not in the dataset at all.
+ * This exists because we hold no coordinates for unknown cities: we must not
+ * invent them, so the honest move is to offer the closest names we do know.
+ */
+export function suggestCities(graph: DomainGraph, query: string, limit = 5): string[] {
+  const needle = normalizeName(query);
+  if (!needle) return [];
+  const tokens = query.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+
+  const scored: { name: string; score: number }[] = [];
+  for (const name of graph.cities.keys()) {
+    const key = normalizeName(name);
+    if (key === needle) {
+      scored.push({ name, score: 100 });
+      continue;
+    }
+    if (key.startsWith(needle) || needle.startsWith(key)) {
+      scored.push({ name, score: 80 - Math.abs(key.length - needle.length) });
+      continue;
+    }
+    if (key.includes(needle) || needle.includes(key)) {
+      scored.push({ name, score: 60 - Math.abs(key.length - needle.length) });
+      continue;
+    }
+    const words = name.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const shared = words.filter((word) => tokens.includes(word)).length;
+    if (shared > 0) {
+      scored.push({ name, score: 40 + shared * 5 - Math.abs(words.length - tokens.length) });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score || compare(a.name, b.name));
+  return scored.slice(0, limit).map((entry) => entry.name);
+}
+
+export interface CityMention {  /** The matched text, e.g. "San Jose". */
   text: string;
   /** Every city whose folded name equals the match; more than one means ambiguity. */
   candidates: string[];

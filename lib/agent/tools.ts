@@ -7,7 +7,7 @@ import {
   buildItinerary,
   type Itinerary,
 } from "@/lib/domain/itinerary";
-import { resolveCity } from "@/lib/domain/resolve";
+import { resolveCity, suggestCities } from "@/lib/domain/resolve";
 import { directDestinations } from "@/lib/domain/network";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import type { Quote, Ticket } from "@/lib/types";
@@ -105,6 +105,19 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
     },
   },
   {
+    name: "nearest_served_city",
+    description:
+      "For a city the network does not serve, find the nearest city that does, measured on our own map. Call this after resolve_city answers \"no_service\" so the recommendation is visible. It returns no distance for a city that is not in the dataset at all — never invent one in that case.",
+    parameters: {
+      type: "object",
+      properties: {
+        city: { type: "string", description: "The city as the user wrote it." },
+      },
+      required: ["city"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "create_booking_quote",
     description:
       "Create the booking quote the passenger can confirm for exactly these city pairs and travellers. Call this once you have a priced itinerary. This only quotes; it never books.",
@@ -162,6 +175,8 @@ export async function runTool(
       return priceItinerary(args, ctx, state, false);
     case "direct_destinations":
       return directDestinationsTool(args, ctx);
+    case "nearest_served_city":
+      return nearestServedTool(args, ctx);
     case "create_booking_quote":
       return priceItinerary(args, ctx, state, true);
     case "list_my_tickets":
@@ -200,16 +215,57 @@ function resolveCityTool(args: Record<string, unknown>, ctx: ToolContext): ToolO
         payload: {
           status: "no_service",
           city: resolution.city,
-          nearest: {
-            city: resolution.nearest.city,
-            distance: formatKm(resolution.nearest.distanceKm),
-          },
-          ask: "There is no service to this city. Offer the nearest served city; never substitute it silently.",
+          ask: "Call nearest_served_city for this city, tell the passenger it has no service, and offer the nearest one instead. Never substitute it silently.",
         },
       };
-    default:
-      return { ok: false, payload: { status: "unknown", text } };
+    default: {
+      // No row in the dataset means no coordinates: a distance here would be
+      // fabricated, so offer the closest names we do know instead.
+      const suggestions = suggestCities(ctx.graph, text);
+      return {
+        ok: false,
+        payload: {
+          status: "not_found",
+          query: text,
+          suggestions,
+          note: "This city is not in our dataset, so we cannot measure how far it is. Ask which of the suggestions the passenger meant.",
+        },
+      };
+    }
   }
+}
+
+function nearestServedTool(args: Record<string, unknown>, ctx: ToolContext): ToolOutcome {
+  const text = typeof args.city === "string" ? args.city : "";
+  const resolution = resolveCity(ctx.graph, text);
+
+  if (resolution.status === "found") {
+    return { ok: true, payload: { status: "has_service", city: resolution.city } };
+  }
+  if (resolution.status !== "no_service") {
+    return {
+      ok: false,
+      payload: {
+        status: "no_coordinates",
+        query: text,
+        suggestions: suggestCities(ctx.graph, text),
+        note: "Not in our dataset — no distance can be computed without inventing coordinates.",
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      status: "no_service",
+      city: resolution.city,
+      nearest: {
+        city: resolution.nearest.city,
+        distance: formatKm(resolution.nearest.distanceKm),
+      },
+      basis: "locations.db coordinates",
+    },
+  };
 }
 
 function directDestinationsTool(args: Record<string, unknown>, ctx: ToolContext): ToolOutcome {

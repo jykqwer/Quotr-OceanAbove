@@ -14,7 +14,9 @@ export function isDirectFlight(graph: DomainGraph, a: string, b: string): boolea
   const from = graph.cities.get(a);
   const to = graph.cities.get(b);
   if (!from || !to || from.name === to.name) return false;
-  if (from.isHub && to.isHub) return graph.hubDistance.get(a)?.has(b) ?? false;
+  // Adjacency only: the APSP says every hub can reach every other hub, which
+  // would let a two-hop hub leg pass as a direct flight.
+  if (from.isHub && to.isHub) return graph.hubLinks.get(a)?.has(b) ?? false;
   if (from.isHub) return to.hubs.includes(a);
   if (to.isHub) return from.hubs.includes(b);
   // Two non-hub cities never share a flight, and neither may be a transfer.

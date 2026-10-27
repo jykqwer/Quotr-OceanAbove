@@ -12,6 +12,8 @@ export interface DomainGraph {
   cities: Map<string, NetworkCity>;
   /** Hubs reachable directly from a city: itself for a hub, `connected_hubs` otherwise. */
   endpoints: Map<string, string[]>;
+  /** Direct hub-to-hub links (undirected). Adjacency only — never the APSP. */
+  hubLinks: Map<string, Set<string>>;
   /** Unrounded hub-to-hub distance. */
   hubDistance: Map<string, Map<string, number>>;
   /** Hub-to-hub city sequence, inclusive of both ends. Deterministic. */
@@ -96,7 +98,11 @@ export function buildGraph(network: Network): DomainGraph {
     .sort(byName);
 
   const edges = new Map<string, Map<string, number>>();
-  for (const hub of hubs) edges.set(hub, new Map());
+  const hubLinks = new Map<string, Set<string>>();
+  for (const hub of hubs) {
+    edges.set(hub, new Map());
+    hubLinks.set(hub, new Set());
+  }
   for (const link of network.links) {
     const a = cities.get(link.a);
     const b = cities.get(link.b);
@@ -104,6 +110,8 @@ export function buildGraph(network: Network): DomainGraph {
     const weight = distanceKm(a, b);
     edges.get(link.a)?.set(link.b, weight);
     edges.get(link.b)?.set(link.a, weight);
+    hubLinks.get(link.a)?.add(link.b);
+    hubLinks.get(link.b)?.add(link.a);
   }
 
   const endpoints = new Map<string, string[]>();
@@ -144,5 +152,5 @@ export function buildGraph(network: Network): DomainGraph {
     }
   }
 
-  return { cities, endpoints, hubDistance: distance, hubPath: path, hubs, serviced };
+  return { cities, endpoints, hubLinks, hubDistance: distance, hubPath: path, hubs, serviced };
 }
