@@ -76,9 +76,12 @@ function bucketOf(name: string): string {
 export function NetworkMap({
   network,
   highlight = null,
+  onCitySelect,
 }: {
   network: Network | null;
   highlight?: Leg[] | null;
+  /** Fired whenever the map's own city selection changes, so the page can drop a pinned route. */
+  onCitySelect?: (name: string | null) => void;
 }) {
   const { t } = useI18n();
   const [hovered, setHovered] = useState<string | null>(null);
@@ -164,22 +167,22 @@ export function NetworkMap({
     [highlight],
   );
 
-  const toggle = useCallback(
-    (name: string) => {
-      const next = selected === name ? null : name;
-      setSelected(next);
-      setRouteYieldedFor(next ? highlightKey : null);
-    },
-    [highlightKey, selected],
-  );
-
-  const selectCity = useCallback(
-    (name: string) => {
+  // One place changes the selection so the yield and the page stay in step.
+  const changeSelected = useCallback(
+    (name: string | null) => {
       setSelected(name);
       setRouteYieldedFor(name ? highlightKey : null);
+      onCitySelect?.(name);
     },
-    [highlightKey],
+    [highlightKey, onCitySelect],
   );
+
+  const toggle = useCallback(
+    (name: string) => changeSelected(selected === name ? null : name),
+    [changeSelected, selected],
+  );
+
+  const selectCity = useCallback((name: string) => changeSelected(name), [changeSelected]);
 
   // A hover-only route vanishes on mouse-out, so its yield must not outlive it.
   useEffect(() => {
@@ -391,7 +394,7 @@ export function NetworkMap({
           preserveAspectRatio="xMidYMid meet"
           role="img"
           aria-label={`${t("map.title")}: ${network.stats.cities} ${t("map.statCities")}, ${network.stats.hubs} ${t("map.statHubs")}`}
-          onClick={() => setSelected(null)}
+          onClick={() => changeSelected(null)}
         >
           <g className="stroke-lamp-300" strokeOpacity="0.045" strokeWidth="14">
             {GRID_X.map((x) => {
@@ -668,10 +671,7 @@ export function NetworkMap({
               <span className="text-slate-200">{selectedCity.name}</span>
               <button
                 type="button"
-                onClick={() => {
-                  setSelected(null);
-                  setRouteYieldedFor(null);
-                }}
+                onClick={() => changeSelected(null)}
                 className="rounded border border-white/15 px-1.5 py-0.5 text-[11.5px] uppercase tracking-[0.12em] text-slate-400 hover:bg-white/[0.05]"
               >
                 {t("map.clear")}

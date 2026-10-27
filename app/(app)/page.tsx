@@ -34,6 +34,8 @@ export default function HomePage() {
   const [departure, setDeparture] = useState(defaultDepartureInput);
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  /** A city picked on the map owns the map, so the thread's route steps aside. */
+  const [mapYieldsToCity, setMapYieldsToCity] = useState(false);
   const [opening, setOpening] = useState(false);
   /** Blank passengers means the account holder, so the placeholder names them. */
   const [userName, setUserName] = useState("");
@@ -147,6 +149,7 @@ export default function HomePage() {
           result.userMessage,
           result.assistantMessage,
         ]);
+        setMapYieldsToCity(false);
       } catch (cause) {
         setMessages((current) => current.filter((message) => message.id !== optimisticId));
         setError(
@@ -205,6 +208,7 @@ export default function HomePage() {
     setExtraLegs([]);
     setPassengers("");
     setDeparture(defaultDepartureInput());
+    setMapYieldsToCity(false);
   }
 
   /** Continue in place: the thread opens in this panel, no trip to /chat. */
@@ -216,6 +220,7 @@ export default function HomePage() {
         const { conversation, messages: items } = await api.getConversation(id);
         setConversationId(conversation.id);
         setMessages(items);
+        setMapYieldsToCity(false);
       } catch {
         setError(t("chat.errorGeneric"));
       } finally {
@@ -237,19 +242,26 @@ export default function HomePage() {
     }
   }, []);
 
+  /** Choosing a city hands the map to it, so a pinned route has to let go. */
+  const handleCitySelect = useCallback((name: string | null) => {
+    setMapYieldsToCity(name !== null);
+    if (name) setPinnedId(null);
+  }, []);
+
   const inThread = messages.length > 0 || sending;
   const minDeparture = toLocalInput(new Date());
   const latest = conversations[0];
   const recent = tickets.slice(0, 8);
   const pinned = tickets.find((ticket) => ticket.id === pinnedId) ?? null;
-  const highlight = hoverLegs ?? ticketLegs(pinned) ?? threadLegs(messages);
+  const highlight =
+    hoverLegs ?? ticketLegs(pinned) ?? (mapYieldsToCity ? null : threadLegs(messages));
   const activeConversation = conversations.find((item) => item.id === conversationId) ?? null;
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-6.6rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
       <div className="scroll-slim order-2 flex min-h-0 flex-col gap-4 overflow-y-auto lg:order-1">
         <div className="shrink-0">
-          <NetworkMap network={network} highlight={highlight} />
+          <NetworkMap network={network} highlight={highlight} onCitySelect={handleCitySelect} />
         </div>
 
         <section className="flex min-h-[176px] min-w-0 flex-1 flex-col rounded-lg border border-white/10 bg-abyss-900">
