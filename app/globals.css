@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    background-color: #050d16;
+    background-image:
+      radial-gradient(1100px 620px at 12% -12%, rgba(22, 184, 168, 0.18), transparent 62%),
+      radial-gradient(900px 480px at 92% -4%, rgba(242, 192, 120, 0.1), transparent 58%),
+      linear-gradient(180deg, #050d16 0%, #07131f 42%, #040b13 100%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(63, 214, 198, 0.3);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/10 bg-white/[0.045] backdrop-blur-xl;
+  }
+
+  .card {
+    @apply glass rounded-2xl shadow-card;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply btn bg-ocean-500 text-abyss-950 shadow-glow hover:bg-ocean-400;
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08];
+  }
+
+  .btn-quiet {
+    @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-white/10 bg-abyss-900/70 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-ocean-400/70 focus:outline-none focus:ring-2 focus:ring-ocean-500/30;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-400;
+  }
+
+  .hairline {
+    @apply border-t border-white/10;
+  }
+}
+
+@layer utilities {
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  }
+
+  .scroll-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scroll-slim::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.28);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

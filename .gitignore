@@ -1,0 +1,24 @@
+node_modules/
+.next/
+out/
+build/
+
+# secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# local runtime data
+data/app.db
+data/app.db-journal
+*.log
+
+# raw agent session exports — scrub secrets before committing to "prompt history/"
+docs/chat.json
+
+# mac metadata
+__MACOSX/
+.DS_Store
+
+next-env.d.ts
+*.tsbuildinfo
