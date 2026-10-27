@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LegTable } from "@/components/leg-timeline";
+import { JourneyList } from "@/components/journey-list";
 import { Barcode, IssuedStamp, PerforatedRule } from "@/components/pass-parts";
 import { ApiError, api } from "@/lib/api/client";
 import { formatKm, formatUsd } from "@/lib/format";
@@ -110,15 +110,16 @@ export function QuoteCard({
       </div>
 
       <div className="px-4 pb-3">
-        <LegTable legs={current.legs} />
+        <JourneyList journeys={current.journeys} />
       </div>
 
       <div className="px-4 pb-3">
         <dl className="space-y-2 text-[11.5px]">
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
-            <dt className="col-head">{t("quote.transfersLabel")}</dt>
+            <dt className="col-head">{t("quote.passengersLabel")}</dt>
             <dd className="text-slate-300 sm:text-right">
-              {current.transfers.length > 0 ? current.transfers.join(" · ") : t("quote.direct")}
+              {current.passengers.join(" · ")}
+              <span className="mono ml-1.5 text-slate-500">×{current.passengers.length}</span>
             </dd>
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
@@ -135,10 +136,17 @@ export function QuoteCard({
 
         <div className="flex items-end justify-between gap-3 pt-1">
           <div className="min-w-0">
-            <p className="col-head">{t("quote.totalPrice")}</p>
-            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
-              {formatUsd(current.priceUsd)}
+            <p className="col-head">
+              {current.passengers.length > 1 ? t("quote.orderTotal") : t("quote.totalPrice")}
             </p>
+            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
+              {formatUsd(current.passengers.length > 1 ? current.totalPriceUsd : current.priceUsd)}
+            </p>
+            {current.passengers.length > 1 && (
+              <p className="mono mt-1 text-[10.5px] text-ink-600">
+                {formatUsd(current.priceUsd)} × {current.passengers.length}
+              </p>
+            )}
           </div>
           <span className="hidden sm:block">
             <Barcode value={current.id} />

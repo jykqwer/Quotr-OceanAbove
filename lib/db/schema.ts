@@ -20,11 +20,12 @@ create table if not exists sessions (
 create index if not exists sessions_user on sessions(user_id);
 
 create table if not exists conversations (
-  id         text primary key,
-  user_id    text not null references users(id) on delete cascade,
-  title      text not null,
-  created_at text not null,
-  updated_at text not null
+  id          text primary key,
+  user_id     text not null references users(id) on delete cascade,
+  title       text not null,
+  search_text text not null default '',
+  created_at  text not null,
+  updated_at  text not null
 );
 create index if not exists conversations_user on conversations(user_id, updated_at desc);
 
@@ -69,16 +70,19 @@ create table if not exists tickets (
   quote_id    text not null unique references quotes(id),
   origin      text not null,
   destination text not null,
-  total_km    real not null,
-  price_usd   real not null,
-  passenger   text not null,
-  created_at  text not null
+  total_km        real not null,
+  price_usd       real not null,
+  total_price_usd real not null default 0,
+  passengers_json text not null default '[]',
+  passenger       text not null,
+  created_at      text not null
 );
 create index if not exists tickets_user on tickets(user_id, created_at desc);
 
 create table if not exists ticket_legs (
   ticket_id   text not null references tickets(id) on delete cascade,
   seq         integer not null,
+  journey_seq integer not null default 1,
   from_city   text not null,
   to_city     text not null,
   distance_km real not null,

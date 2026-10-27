@@ -8,19 +8,19 @@ import { ConversationList } from "@/components/conversation-list";
 import { MessageBubble } from "@/components/message-bubble";
 import { ListIcon } from "@/components/icons";
 import { api } from "@/lib/api/client";
+import { useConversationSearch } from "@/lib/hooks/conversation-search";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
-import type { Conversation, Message, Quote, Ticket, ToolTrace } from "@/lib/types";
+import type { Message, Quote, Ticket, ToolTrace } from "@/lib/types";
 
 export default function ChatPage() {
   const { t, lang } = useI18n();
   const searchParams = useSearchParams();
   const requestedId = searchParams.get("c");
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const list = useConversationSearch(t("chat.errorGeneric"));
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [listLoading, setListLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,28 +28,16 @@ export default function ChatPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const skipLoadFor = useRef<string | null>(null);
+  const selected = useRef(false);
 
-  const loadConversations = useCallback(
-    async (selectFirst: boolean) => {
-      try {
-        const { conversations: list } = await api.listConversations();
-        setConversations(list);
-        if (selectFirst) {
-          const preferred = requestedId && list.some((item) => item.id === requestedId) ? requestedId : null;
-          setActiveId((current) => current ?? preferred ?? list[0]?.id ?? null);
-        }
-      } catch {
-        setError(t("chat.errorGeneric"));
-      } finally {
-        setListLoading(false);
-      }
-    },
-    [requestedId, t],
-  );
-
+  // Pick a conversation to open once the first page arrives, preferring ?c=.
   useEffect(() => {
-    void loadConversations(true);
-  }, [loadConversations]);
+    if (selected.current || list.loading || list.items.length === 0) return;
+    selected.current = true;
+    const preferred =
+      requestedId && list.items.some((item) => item.id === requestedId) ? requestedId : null;
+    setActiveId(preferred ?? list.items[0].id);
+  }, [list.items, list.loading, requestedId]);
 
   useEffect(() => {
     if (!activeId) {
@@ -89,9 +77,9 @@ export default function ChatPage() {
       setMessages((current) =>
         current.map((message) => (message.quote?.id === quote.id ? { ...message, quote } : message)),
       );
-      if (ticket) void loadConversations(false);
+      if (ticket) list.reload();
     },
-    [loadConversations],
+    [list],
   );
 
   async function handleSend(text: string) {
@@ -129,7 +117,7 @@ export default function ChatPage() {
         result.userMessage,
         result.assistantMessage,
       ]);
-      setConversations((current) => [
+      list.setItems((current) => [
         result.conversation,
         ...current.filter((item) => item.id !== result.conversation.id),
       ]);
@@ -148,17 +136,22 @@ export default function ChatPage() {
     setError(null);
   }
 
-  const active = conversations.find((item) => item.id === activeId) ?? null;
+  const active = list.items.find((item) => item.id === activeId) ?? null;
   const isEmpty = messages.length === 0 && !threadLoading;
 
   return (
     <div className="grid h-[calc(100dvh-12.5rem)] min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[248px_minmax(0,1fr)]">
       <ConversationList
-        conversations={conversations}
+        conversations={list.items}
         activeId={activeId}
         onSelect={setActiveId}
         onNew={handleNewConversation}
-        loading={listLoading}
+        loading={list.loading}
+        search={list.search}
+        onSearch={list.setSearch}
+        nextCursor={list.nextCursor}
+        loadingMore={list.loadingMore}
+        onLoadMore={() => void list.loadMore()}
       />
 
       <section className="flex min-h-0 flex-col border border-white/10 bg-abyss-900">

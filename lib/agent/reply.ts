@@ -1,4 +1,5 @@
 import type { DomainGraph } from "@/lib/domain/graph";
+import type { Itinerary } from "@/lib/domain/itinerary";
 import { findCityMentions, resolveCity } from "@/lib/domain/resolve";
 import { findRoute, type Route } from "@/lib/domain/route";
 import { formatKm, formatUsd } from "@/lib/format";
@@ -36,13 +37,48 @@ function ticketSummary(tickets: Ticket[], lang: Lang): string {
       ? "你还没有预订过机票。告诉我出发城市和目的地，我可以先给你报价。"
       : "You have not booked any tickets yet. Tell me where you want to fly and I can quote a route.";
   }
-  const lines = tickets.map(
-    (ticket) =>
-      `• ${ticket.origin} → ${ticket.destination} · ${formatKm(ticket.totalDistanceKm)} · ${formatUsd(ticket.priceUsd)} · ${ticket.id}`,
-  );
+  const lines = tickets.map((ticket) => {
+    const scope =
+      ticket.journeys.length > 1
+        ? ticket.journeys.map((journey) => `${journey.origin}→${journey.destination}`).join(" / ")
+        : `${ticket.origin} → ${ticket.destination}`;
+    const heads = ticket.passengers.length;
+    const fare =
+      heads > 1
+        ? `${formatUsd(ticket.priceUsd)} × ${heads} = ${formatUsd(ticket.totalPriceUsd)}`
+        : formatUsd(ticket.priceUsd);
+    return `• ${scope} · ${formatKm(ticket.totalDistanceKm)} · ${fare} · ${ticket.id}`;
+  });
   return zh
     ? `你一共预订了 ${tickets.length} 张机票：\n${lines.join("\n")}`
     : `You have ${tickets.length} ticket${tickets.length > 1 ? "s" : ""}:\n${lines.join("\n")}`;
+}
+
+/** Engine-worded summary of a priced itinerary, used when the model's text is rejected. */
+export function itinerarySummary(itinerary: Itinerary, lang: Lang): string {
+  const zh = lang === "zh";
+  const legs = itinerary.journeys.reduce((sum, journey) => sum + journey.legs.length, 0);
+  const heads = itinerary.passengers.length;
+
+  const scope =
+    itinerary.journeys.length === 1
+      ? itinerary.journeys[0].origin === itinerary.journeys[0].destination
+        ? itinerary.journeys[0].origin
+        : `${itinerary.journeys[0].origin} → ${itinerary.journeys[0].destination}`
+      : itinerary.journeys.map((journey) => `${journey.origin} → ${journey.destination}`).join(" / ");
+
+  const legText = zh ? `${legs} 段` : `${legs} leg${legs === 1 ? "" : "s"}`;
+  const fare = formatUsd(itinerary.priceUsd);
+  const order = formatUsd(itinerary.totalPriceUsd);
+
+  if (zh) {
+    return heads > 1
+      ? `${scope} 的最便宜方案共 ${legText}，总距离 ${formatKm(itinerary.totalDistanceKm)}。每人 ${fare}，${heads} 位乘客合计 ${order}。请核对下方行程，确认后我再出票。`
+      : `${scope} 的最便宜方案共 ${legText}，总距离 ${formatKm(itinerary.totalDistanceKm)}，票价 ${fare}。请核对下方行程，确认后我再出票。`;
+  }
+  return heads > 1
+    ? `Cheapest option for ${scope}: ${legText}, ${formatKm(itinerary.totalDistanceKm)} total. ${fare} per passenger, ${order} for ${heads} passengers. Review the itinerary below and confirm to book.`
+    : `Cheapest option for ${scope}: ${legText}, ${formatKm(itinerary.totalDistanceKm)} total, ${fare}. Review the itinerary below and confirm to book.`;
 }
 
 export type ToolReport = (name: string, ok: boolean, ms: number) => void;

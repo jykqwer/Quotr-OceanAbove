@@ -1,0 +1,156 @@
+import type { DomainGraph } from "@/lib/domain/graph";
+import { PRICE_PER_KM, distanceKm, round2 } from "@/lib/domain/pricing";
+import { findRoute, type Route } from "@/lib/domain/route";
+import { RouteInvariantError, verifyRoute } from "@/lib/domain/verify";
+import type { Journey } from "@/lib/types";
+
+export const MAX_JOURNEYS = 4;
+export const MAX_PASSENGERS = 6;
+
+export interface Itinerary {
+  journeys: Journey[];
+  passengers: string[];
+  totalDistanceKm: number;
+  /** Fare per passenger, still round(total × 0.13, 2). */
+  priceUsd: number;
+  totalPriceUsd: number;
+}
+
+export class ItineraryError extends Error {
+  readonly code: string;
+
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "ItineraryError";
+    this.code = code;
+  }
+}
+
+export function journeyOf(route: Route): Journey {
+  return {
+    origin: route.origin,
+    destination: route.destination,
+    legs: route.legs.map((leg) => ({
+      seq: leg.seq,
+      from: leg.from,
+      to: leg.to,
+      distanceKm: leg.distanceKm,
+    })),
+    transfers: [...route.transfers],
+    totalDistanceKm: route.totalDistanceKm,
+  };
+}
+
+/**
+ * Passengers are named travellers. Blank entries are dropped, names are
+ * trimmed and de-duplicated case-insensitively, and the list is bounded so a
+ * typo cannot create a hundred-seat order.
+ */
+export function normalizePassengers(input: unknown, fallback: string): string[] {
+  const raw = Array.isArray(input) ? input : typeof input === "string" ? input.split(/[,，、;；]/) : [];
+  const seen = new Set<string>();
+  const names: string[] = [];
+
+  for (const entry of raw) {
+    if (typeof entry !== "string") continue;
+    const name = entry.trim().replace(/\s+/g, " ").slice(0, 40);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(name);
+    if (names.length === MAX_PASSENGERS) break;
+  }
+
+  if (names.length === 0) names.push(fallback);
+  return names;
+}
+
+export interface JourneyRequest {
+  origin: string;
+  destination: string;
+}
+
+export interface BuildItineraryInput {
+  journeys: JourneyRequest[];
+  passengers: string[];
+}
+
+/**
+ * Builds a priced itinerary from requested city pairs. Every journey is routed
+ * by the domain engine and verified; the itinerary total is the sum of the
+ * journeys' distances, and the fare is still round(total × 0.13, 2) rather than
+ * a sum of separately rounded fares, so the contract cannot drift.
+ */
+export function buildItinerary(graph: DomainGraph, input: BuildItineraryInput): Itinerary {
+  const requests = input.journeys.slice(0, MAX_JOURNEYS);
+  if (requests.length === 0) throw new ItineraryError("empty", "an itinerary needs at least one journey");
+
+  const journeys: Journey[] = [];
+  for (const request of requests) {
+    const origin = request.origin.trim();
+    const destination = request.destination.trim();
+    if (!origin || !destination) {
+      throw new ItineraryError("bad_city", "both cities are required");
+    }
+    if (origin === destination) {
+      throw new ItineraryError("same_city", `${origin} to ${origin} is not a trip`);
+    }
+
+    const route = findRoute(graph, origin, destination);
+    if (!route) throw new ItineraryError("no_route", `no route from ${origin} to ${destination}`);
+    verifyRoute(graph, route);
+    journeys.push(journeyOf(route));
+  }
+
+  const totalDistanceKm = round2(journeys.reduce((sum, journey) => sum + journey.totalDistanceKm, 0));
+  const passengers = normalizePassengers(input.passengers, "Passenger");
+  const priceUsd = round2(totalDistanceKm * PRICE_PER_KM);
+
+  return {
+    journeys,
+    passengers,
+    totalDistanceKm,
+    priceUsd,
+    totalPriceUsd: round2(priceUsd * passengers.length),
+  };
+}
+
+/** Re-asserts the whole-itinerary contract: every journey plus the totals. */
+export function verifyItinerary(graph: DomainGraph, itinerary: Itinerary): void {
+  if (itinerary.journeys.length === 0) throw new RouteInvariantError("itinerary has no journeys");
+
+  for (const journey of itinerary.journeys) {
+    const exactDistanceKm = journey.legs.reduce((sum, leg) => {
+      const from = graph.cities.get(leg.from);
+      const to = graph.cities.get(leg.to);
+      if (!from || !to) throw new RouteInvariantError(`leg ${leg.seq} uses an unknown city`);
+      return sum + distanceKm(from, to);
+    }, 0);
+
+    verifyRoute(graph, {
+      origin: journey.origin,
+      destination: journey.destination,
+      legs: journey.legs,
+      transfers: journey.transfers,
+      totalDistanceKm: journey.totalDistanceKm,
+      priceUsd: round2(journey.totalDistanceKm * PRICE_PER_KM),
+      exactDistanceKm,
+    });
+  }
+
+  const summed = round2(itinerary.journeys.reduce((sum, journey) => sum + journey.totalDistanceKm, 0));
+  if (summed !== itinerary.totalDistanceKm) {
+    throw new RouteInvariantError(`itinerary total ${itinerary.totalDistanceKm} is not the sum of journeys`);
+  }
+
+  const price = round2(itinerary.totalDistanceKm * PRICE_PER_KM);
+  if (price !== itinerary.priceUsd) {
+    throw new RouteInvariantError(`fare ${itinerary.priceUsd} is not round(total × ${PRICE_PER_KM}, 2)`);
+  }
+
+  const orderTotal = round2(itinerary.priceUsd * itinerary.passengers.length);
+  if (orderTotal !== itinerary.totalPriceUsd) {
+    throw new RouteInvariantError(`order total ${itinerary.totalPriceUsd} is not fare × passengers`);
+  }
+}

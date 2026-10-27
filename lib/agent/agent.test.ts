@@ -20,16 +20,17 @@ function ctx(overrides: Partial<ToolContext> = {}): ToolContext {
     userId: "u_test",
     conversationId: "c_test",
     tickets: [],
-    createQuote: (route) =>
+    createQuote: (itinerary) =>
       ({
         id: "q_test",
         conversationId: "c_test",
-        origin: route.origin,
-        destination: route.destination,
-        legs: route.legs,
-        transfers: route.transfers,
-        totalDistanceKm: route.totalDistanceKm,
-        priceUsd: route.priceUsd,
+        origin: itinerary.journeys[0].origin,
+        destination: itinerary.journeys[itinerary.journeys.length - 1].destination,
+        journeys: itinerary.journeys,
+        passengers: itinerary.passengers,
+        totalDistanceKm: itinerary.totalDistanceKm,
+        priceUsd: itinerary.priceUsd,
+        totalPriceUsd: itinerary.totalPriceUsd,
         status: "pending",
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 900_000).toISOString(),
@@ -143,21 +144,26 @@ test("resolve_city reports the nearest served city for an unserved one", async (
   assert.equal(payload.nearest.distance, "350.89 km");
 });
 
-test("find_route returns engine numbers in display form", async () => {
+test("find_itinerary returns engine numbers in display form", async () => {
   const state: ToolState = {};
-  const outcome = await runTool("find_route", { origin: "Chengdu", destination: "Split" }, ctx(), state);
+  const outcome = await runTool(
+    "find_itinerary",
+    { journeys: [{ origin: "Chengdu", destination: "Split" }] },
+    ctx(),
+    state,
+  );
   const payload = outcome.payload as {
     verified: boolean;
     totalDistance: string;
-    price: string;
-    legCount: number;
+    farePerPassenger: string;
+    journeys: { legCount: number }[];
   };
 
   assert.equal(payload.verified, true);
   assert.equal(payload.totalDistance, "3,925.76 km");
-  assert.equal(payload.price, "$510.35");
-  assert.equal(payload.legCount, 2);
-  assert.equal(state.route?.destination, "Split");
+  assert.equal(payload.farePerPassenger, "$510.35");
+  assert.equal(payload.journeys[0].legCount, 2);
+  assert.equal(state.itinerary?.journeys[0].destination, "Split");
 });
 
 test("a full tool round-trip produces a quote and uses the engine's wording", async () => {
@@ -166,12 +172,12 @@ test("a full tool round-trip produces a quote and uses the engine's wording", as
     { content: "", toolCalls: [call("resolve_city", { text: "Split" })], finishReason: "tool_calls" },
     {
       content: "",
-      toolCalls: [call("find_route", { origin: "Chengdu", destination: "Split" })],
+      toolCalls: [call("find_itinerary", { journeys: [{ origin: "Chengdu", destination: "Split" }] })],
       finishReason: "tool_calls",
     },
     {
       content: "",
-      toolCalls: [call("create_booking_quote", { origin: "Chengdu", destination: "Split" })],
+      toolCalls: [call("create_booking_quote", { journeys: [{ origin: "Chengdu", destination: "Split" }] })],
       finishReason: "tool_calls",
     },
     {
@@ -185,10 +191,10 @@ test("a full tool round-trip produces a quote and uses the engine's wording", as
 
   assert.equal(out.source, "llm");
   assert.equal(out.quote?.priceUsd, 510.35);
-  assert.equal(out.route?.totalDistanceKm, 3925.76);
+  assert.equal(out.itinerary?.totalDistanceKm, 3925.76);
   assert.deepEqual(
     out.tools.map((trace) => trace.name),
-    ["resolve_city", "resolve_city", "find_route", "create_booking_quote"],
+    ["resolve_city", "resolve_city", "find_itinerary", "create_booking_quote"],
   );
   // Tool results are fed back to the model as tool messages.
   const lastCall = seen[seen.length - 1];
@@ -199,7 +205,7 @@ test("an invented figure is replaced by the engine's own summary", async () => {
   const { complete } = scripted([
     {
       content: "",
-      toolCalls: [call("find_route", { origin: "Chengdu", destination: "Split" })],
+      toolCalls: [call("find_itinerary", { journeys: [{ origin: "Chengdu", destination: "Split" }] })],
       finishReason: "tool_calls",
     },
     {
@@ -222,7 +228,7 @@ test("prompt injection cannot make the agent claim a booking", async () => {
   const { complete } = scripted([
     {
       content: "",
-      toolCalls: [call("find_route", { origin: "Chengdu", destination: "Split" })],
+      toolCalls: [call("find_itinerary", { journeys: [{ origin: "Chengdu", destination: "Split" }] })],
       finishReason: "tool_calls",
     },
     // A model that obeys the injection: no tool call, fabricated claim.
@@ -268,14 +274,14 @@ test("a failing tool is reported but does not crash the turn", async () => {
   const { complete } = scripted([
     {
       content: "",
-      toolCalls: [call("find_route", { origin: "Nowhere", destination: "Split" })],
+      toolCalls: [call("find_itinerary", { journeys: [{ origin: "Nowhere", destination: "Split" }] })],
       finishReason: "tool_calls",
     },
     { content: "I could not find that route.", toolCalls: [], finishReason: "stop" },
   ]);
 
   const out = await runAgent(baseInput({ complete }));
-  const failed = out.tools.find((trace) => trace.name === "find_route");
+  const failed = out.tools.find((trace) => trace.name === "find_itinerary");
   assert.equal(failed?.ok, false);
   assert.equal(out.content, "I could not find that route.");
 });

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Leg } from "@/lib/types";
+import type { Journey } from "@/lib/types";
 
 /**
  * The immutable part of a quote. `status`, timestamps and the conversation link
@@ -9,25 +9,33 @@ import type { Leg } from "@/lib/types";
 export interface QuoteSnapshot {
   origin: string;
   destination: string;
-  legs: Leg[];
-  transfers: string[];
+  journeys: Journey[];
+  passengers: string[];
   totalDistanceKm: number;
   priceUsd: number;
+  totalPriceUsd: number;
 }
 
-export function snapshotOf(route: QuoteSnapshot): QuoteSnapshot {
+export function snapshotOf(source: QuoteSnapshot): QuoteSnapshot {
   return {
-    origin: route.origin,
-    destination: route.destination,
-    legs: route.legs.map((leg) => ({
-      seq: leg.seq,
-      from: leg.from,
-      to: leg.to,
-      distanceKm: leg.distanceKm,
+    origin: source.origin,
+    destination: source.destination,
+    journeys: source.journeys.map((journey) => ({
+      origin: journey.origin,
+      destination: journey.destination,
+      legs: journey.legs.map((leg) => ({
+        seq: leg.seq,
+        from: leg.from,
+        to: leg.to,
+        distanceKm: leg.distanceKm,
+      })),
+      transfers: [...journey.transfers],
+      totalDistanceKm: journey.totalDistanceKm,
     })),
-    transfers: [...route.transfers],
-    totalDistanceKm: route.totalDistanceKm,
-    priceUsd: route.priceUsd,
+    passengers: [...source.passengers],
+    totalDistanceKm: source.totalDistanceKm,
+    priceUsd: source.priceUsd,
+    totalPriceUsd: source.totalPriceUsd,
   };
 }
 

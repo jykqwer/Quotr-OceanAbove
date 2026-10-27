@@ -52,6 +52,12 @@ Hide secondary columns with `hidden sm:table-cell`, never by shrinking type.
 
 Active state is a 2px left rule plus a 4% lift. Coral is reserved for actions, so navigation stays `ocean-400`.
 
+**Search field above the rows**: full width, `bg-abyss-950`, 1px `border-white/10`, 11.5px text, and the same
+focus ring as every other control. It sits inside the panel header block, never floating over the list.
+When results are empty show one line naming the term (`Nothing matches “bogotá”`), not a generic empty state.
+Paging is a single full-width `LOAD OLDER` text button in mono 9.5px at the end of the list — no page numbers,
+no arrows, no spinner (the label becomes `Loading…`).
+
 ## Boarding pass (quote and ticket) — the most important component
 
 Order is contractual; it satisfies "confirm before booking":
@@ -91,6 +97,19 @@ Rules:
 - The button lives on the paper, not on the dark part — pressing it should feel like tearing the ticket.
 - Amounts on paper use `text-sunset-600`; on dark surfaces use `text-sand`.
 
+### Multi-journey and multi-passenger on the same pass
+
+A pass may hold several city pairs and several travellers. Never drop the grouping:
+
+- **Journeys**: `JourneyList` renders one bordered block per city pair, each with its own header
+  (`Journey 2` coral micro-label · `origin → destination` · that journey's distance) and its own segment table.
+  A single-trip pass renders exactly one naked leg table — it must look unchanged from before.
+- **Travellers**: one fact row `Passengers · Ada · Grace Hopper ×2`. Names come from the data verbatim.
+- **Money**: the largest number is the **order total** when there is more than one passenger, labelled
+  `Order total`, with `$2,870.83 × 2` in mono `10.5px` underline beneath it. With one passenger it stays
+  `Total` and shows the fare. Prices are never split into per-leg sums.
+- The route block still shows the **trip** endpoints (first departure → last arrival), not the first journey only.
+
 ## Perforation, barcode, stamp
 
 ```tsx
@@ -128,6 +147,12 @@ Two columns on desktop: the map plus recent tickets on the left, the booking pan
 **Thread** — the form, the examples and the continue card disappear; the panel becomes a scrollable conversation with the composer pinned at the bottom and a "New search" button in the header. Sending from home must never navigate to `/chat`.
 
 Selects use `.select` with a `▾` marker; option groups reuse `map.statHubs` / `map.statCities` so the labels stay bilingual for free.
+
+**Multi-city and passengers stay secondary.** Under the city pair sit a `Passengers` text field (11.5px `.field`,
+placeholder names, one hint line `Comma separated; leave blank for yourself`) and a dashed-border, quiet
+`+ Add a leg` button that only grows to 3 extra pairs. Added pairs are indented with a 2px coral left rule,
+labelled `Leg 2` in mono 9px, and carry a text-only `Remove` on the right. The idle panel must still read as
+"one form", not as a builder.
 
 ## Composer
 

@@ -50,8 +50,8 @@ export async function POST(request: Request) {
       lang,
       tickets: listTickets(db, user.id),
       history,
-      createQuote: (route) =>
-        createQuote(db, { userId: user.id, conversationId: conversation.id, route }),
+      createQuote: (itinerary) =>
+        createQuote(db, { userId: user.id, conversationId: conversation.id, itinerary }),
       ...hooks,
     });
 

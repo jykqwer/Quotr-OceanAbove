@@ -4,6 +4,13 @@ import path from "node:path";
 import test from "node:test";
 import { loadNetwork } from "@/lib/db/locations";
 import { buildGraph } from "@/lib/domain/graph";
+import {
+  MAX_PASSENGERS,
+  buildItinerary,
+  normalizePassengers,
+  verifyItinerary,
+} from "@/lib/domain/itinerary";
+import { PRICE_PER_KM, round2 } from "@/lib/domain/pricing";
 import { findCityMentions, resolveCity } from "@/lib/domain/resolve";
 import { findRoute } from "@/lib/domain/route";
 import { isDirectFlight, verifyRoute } from "@/lib/domain/verify";
@@ -174,4 +181,91 @@ test("free text keeps ambiguous mentions for the caller to resolve", () => {
 
 test("same city is not a route", () => {
   assert.equal(findRoute(graph, "London", "London"), null);
+});
+
+test("passengers are trimmed, de-duplicated and bounded", () => {
+  assert.deepEqual(normalizePassengers(undefined, "Ada"), ["Ada"]);
+  assert.deepEqual(normalizePassengers([], "Ada"), ["Ada"]);
+  assert.deepEqual(normalizePassengers(["  Ada  ", "ada", "Grace"], "Ada"), ["Ada", "Grace"]);
+  assert.deepEqual(normalizePassengers("Ada，Grace、Ada", "Ada"), ["Ada", "Grace"]);
+  assert.deepEqual(normalizePassengers(["", "   "], "Ada"), ["Ada"]);
+  assert.equal(normalizePassengers(Array.from({ length: 9 }, (_, i) => `P${i}`), "Ada").length, MAX_PASSENGERS);
+});
+
+test("an itinerary total is the sum of journeys, priced once", () => {
+  const oneWay = buildItinerary(graph, {
+    journeys: [{ origin: "Chengdu", destination: "Split" }],
+    passengers: ["Ada"],
+  });
+  assert.equal(oneWay.totalDistanceKm, 3925.76);
+  assert.equal(oneWay.priceUsd, 510.35);
+  assert.equal(oneWay.totalPriceUsd, 510.35);
+
+  const roundTrip = buildItinerary(graph, {
+    journeys: [
+      { origin: "Chengdu", destination: "Split" },
+      { origin: "Split", destination: "Chengdu" },
+    ],
+    passengers: ["Ada"],
+  });
+  assert.equal(roundTrip.journeys.length, 2);
+  assert.equal(
+    roundTrip.totalDistanceKm,
+    Math.round((oneWay.totalDistanceKm + roundTrip.journeys[1].totalDistanceKm) * 100) / 100,
+  );
+  // The fare is round(total × 0.13) once, not the sum of two rounded fares.
+  assert.equal(roundTrip.priceUsd, round2(roundTrip.totalDistanceKm * PRICE_PER_KM));
+  verifyItinerary(graph, roundTrip);
+});
+
+test("multiple passengers multiply the fare without re-rounding it", () => {
+  const solo = buildItinerary(graph, {
+    journeys: [{ origin: "Chengdu", destination: "Split" }],
+    passengers: ["Ada"],
+  });
+  const pair = buildItinerary(graph, {
+    journeys: [{ origin: "Chengdu", destination: "Split" }],
+    passengers: ["Ada", "Grace"],
+  });
+
+  assert.equal(pair.priceUsd, solo.priceUsd, "the per-passenger fare does not change");
+  assert.equal(pair.totalPriceUsd, round2(solo.priceUsd * 2));
+  verifyItinerary(graph, pair);
+});
+
+test("an itinerary rejects the trips it cannot price", () => {
+  assert.throws(() => buildItinerary(graph, { journeys: [], passengers: [] }), /at least one journey/);
+  assert.throws(
+    () => buildItinerary(graph, { journeys: [{ origin: "London", destination: "London" }], passengers: [] }),
+    /not a trip/,
+  );
+  assert.throws(
+    () =>
+      buildItinerary(graph, {
+        journeys: [{ origin: "London", destination: "Nowhere City" }],
+        passengers: [],
+      }),
+    /no route/,
+  );
+});
+
+test("verifyItinerary catches a tampered total", () => {
+  const itinerary = buildItinerary(graph, {
+    journeys: [{ origin: "Chengdu", destination: "Split" }],
+    passengers: ["Ada", "Grace"],
+  });
+  verifyItinerary(graph, itinerary);
+
+  assert.throws(
+    () => verifyItinerary(graph, { ...itinerary, totalPriceUsd: 1 }),
+    /order total/,
+  );
+  assert.throws(
+    () =>
+      verifyItinerary(graph, {
+        ...itinerary,
+        totalDistanceKm: itinerary.totalDistanceKm + 1,
+      }),
+    /not the sum of journeys/,
+  );
 });

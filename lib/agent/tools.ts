@@ -1,8 +1,13 @@
 import type { Db } from "@/lib/db/app";
 import type { DomainGraph } from "@/lib/domain/graph";
+import {
+  ItineraryError,
+  MAX_JOURNEYS,
+  MAX_PASSENGERS,
+  buildItinerary,
+  type Itinerary,
+} from "@/lib/domain/itinerary";
 import { resolveCity } from "@/lib/domain/resolve";
-import { findRoute, type Route } from "@/lib/domain/route";
-import { verifyRoute } from "@/lib/domain/verify";
 import { formatKm, formatUsd } from "@/lib/format";
 import type { Quote, Ticket } from "@/lib/types";
 import type { LlmToolSchema } from "@/lib/agent/llm";
@@ -14,7 +19,7 @@ export interface ToolContext {
   conversationId: string;
   tickets: Ticket[];
   /** Injected so tests can exercise the loop without touching SQLite. */
-  createQuote: (route: Route) => Quote;
+  createQuote: (itinerary: Itinerary) => Quote;
 }
 
 export interface ToolOutcome {
@@ -24,15 +29,39 @@ export interface ToolOutcome {
 }
 
 export interface ToolState {
-  route?: Route;
+  itinerary?: Itinerary;
   quote?: Quote;
 }
+
+const JOURNEYS_SCHEMA = {
+  type: "array",
+  minItems: 1,
+  maxItems: MAX_JOURNEYS,
+  description:
+    "One entry per city pair the passenger flies. A one-way trip has exactly one entry; a round trip or open jaw has one entry per city pair. Never split one city pair into several entries.",
+  items: {
+    type: "object",
+    properties: {
+      origin: { type: "string", description: "Exact origin city name from resolve_city." },
+      destination: { type: "string", description: "Exact destination city name from resolve_city." },
+    },
+    required: ["origin", "destination"],
+    additionalProperties: false,
+  },
+};
+
+const PASSENGERS_SCHEMA = {
+  type: "array",
+  maxItems: MAX_PASSENGERS,
+  description: "Traveller names. Omit for a single passenger.",
+  items: { type: "string" },
+};
 
 export const TOOL_SCHEMAS: LlmToolSchema[] = [
   {
     name: "resolve_city",
     description:
-      "Resolve a city name exactly as the user wrote it. Returns the matched city, a list of candidates when the name is ambiguous, or the nearest served city when there is no service. Always call this before find_route.",
+      "Resolve a city name exactly as the user wrote it. Returns the matched city, a list of candidates when the name is ambiguous, or the nearest served city when there is no service. Always call this before pricing anything.",
     parameters: {
       type: "object",
       properties: {
@@ -43,30 +72,24 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
     },
   },
   {
-    name: "find_route",
+    name: "find_itinerary",
     description:
-      "Cheapest route between two already-resolved cities. Transfers are only allowed at hubs. Returns the legs, transfer cities, total distance and total price, already formatted for display.",
+      "Cheapest route for every city pair, priced as one itinerary. Transfers are only allowed at hubs. Returns the legs, transfer cities, per-passenger fare and order total, already formatted for display.",
     parameters: {
       type: "object",
-      properties: {
-        origin: { type: "string", description: "Exact origin city name from resolve_city." },
-        destination: { type: "string", description: "Exact destination city name from resolve_city." },
-      },
-      required: ["origin", "destination"],
+      properties: { journeys: JOURNEYS_SCHEMA, passengers: PASSENGERS_SCHEMA },
+      required: ["journeys"],
       additionalProperties: false,
     },
   },
   {
     name: "create_booking_quote",
     description:
-      "Create the booking quote the user can confirm. Call this once you have a verified route for a concrete origin/destination pair. This only quotes; it never books.",
+      "Create the booking quote the passenger can confirm for exactly these city pairs and travellers. Call this once you have a priced itinerary. This only quotes; it never books.",
     parameters: {
       type: "object",
-      properties: {
-        origin: { type: "string", description: "Exact origin city name from resolve_city." },
-        destination: { type: "string", description: "Exact destination city name from resolve_city." },
-      },
-      required: ["origin", "destination"],
+      properties: { journeys: JOURNEYS_SCHEMA, passengers: PASSENGERS_SCHEMA },
+      required: ["journeys"],
       additionalProperties: false,
     },
   },
@@ -78,20 +101,28 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
 ];
 
 /** Numbers and city names the assistant is allowed to repeat. */
-export function routePayload(route: Route) {
+export function itineraryPayload(itinerary: Itinerary) {
   return {
-    origin: route.origin,
-    destination: route.destination,
-    legs: route.legs.map((leg) => ({
-      seq: leg.seq,
-      from: leg.from,
-      to: leg.to,
-      distance: formatKm(leg.distanceKm),
+    journeys: itinerary.journeys.map((journey, index) => ({
+      index: index + 1,
+      origin: journey.origin,
+      destination: journey.destination,
+      legs: journey.legs.map((leg) => ({
+        seq: leg.seq,
+        from: leg.from,
+        to: leg.to,
+        distance: formatKm(leg.distanceKm),
+      })),
+      transfers: journey.transfers,
+      legCount: journey.legs.length,
+      distance: formatKm(journey.totalDistanceKm),
     })),
-    transfers: route.transfers,
-    legCount: route.legs.length,
-    totalDistance: formatKm(route.totalDistanceKm),
-    price: formatUsd(route.priceUsd),
+    journeyCount: itinerary.journeys.length,
+    passengers: itinerary.passengers,
+    passengerCount: itinerary.passengers.length,
+    totalDistance: formatKm(itinerary.totalDistanceKm),
+    farePerPassenger: formatUsd(itinerary.priceUsd),
+    orderTotal: formatUsd(itinerary.totalPriceUsd),
   };
 }
 
@@ -104,10 +135,10 @@ export async function runTool(
   switch (name) {
     case "resolve_city":
       return resolveCityTool(args, ctx);
-    case "find_route":
-      return findRouteTool(args, ctx, state);
+    case "find_itinerary":
+      return priceItinerary(args, ctx, state, false);
     case "create_booking_quote":
-      return createQuoteTool(args, ctx, state);
+      return priceItinerary(args, ctx, state, true);
     case "list_my_tickets":
       return { ok: true, payload: ticketsPayload(ctx.tickets) };
     default:
@@ -156,39 +187,40 @@ function resolveCityTool(args: Record<string, unknown>, ctx: ToolContext): ToolO
   }
 }
 
-function findRouteTool(args: Record<string, unknown>, ctx: ToolContext, state: ToolState): ToolOutcome {
-  const origin = typeof args.origin === "string" ? args.origin : "";
-  const destination = typeof args.destination === "string" ? args.destination : "";
-  if (!origin || !destination) {
-    return { ok: false, payload: { error: "origin_and_destination_required" } };
+function priceItinerary(
+  args: Record<string, unknown>,
+  ctx: ToolContext,
+  state: ToolState,
+  alsoCreateQuote: boolean,
+): ToolOutcome {
+  const rawJourneys = Array.isArray(args.journeys) ? args.journeys : [];
+  const journeys = rawJourneys
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object")
+    .map((entry) => ({
+      origin: typeof entry.origin === "string" ? entry.origin : "",
+      destination: typeof entry.destination === "string" ? entry.destination : "",
+    }))
+    .filter((entry) => entry.origin && entry.destination);
+
+  if (journeys.length === 0) return { ok: false, payload: { error: "journeys_required" } };
+
+  let itinerary: Itinerary;
+  try {
+    itinerary = buildItinerary(ctx.graph, {
+      journeys,
+      passengers: Array.isArray(args.passengers) ? (args.passengers as string[]) : [],
+    });
+  } catch (cause) {
+    const error = cause instanceof ItineraryError ? cause.code : "itinerary_failed";
+    return { ok: false, payload: { error, journeys } };
   }
 
-  const route = findRoute(ctx.graph, origin, destination);
-  if (!route) {
-    return { ok: false, payload: { error: "no_route", origin, destination } };
+  state.itinerary = itinerary;
+  if (!alsoCreateQuote) {
+    return { ok: true, payload: { status: "ok", verified: true, ...itineraryPayload(itinerary) } };
   }
 
-  // The invariant is checked here, not trusted from the model's narration.
-  verifyRoute(ctx.graph, route);
-
-  state.route = route;
-  return { ok: true, payload: { status: "ok", verified: true, ...routePayload(route) } };
-}
-
-function createQuoteTool(args: Record<string, unknown>, ctx: ToolContext, state: ToolState): ToolOutcome {
-  const origin = typeof args.origin === "string" ? args.origin : "";
-  const destination = typeof args.destination === "string" ? args.destination : "";
-  if (!origin || !destination) {
-    return { ok: false, payload: { error: "origin_and_destination_required" } };
-  }
-
-  // Recompute from the engine so a quote can never come from model-provided numbers.
-  const route = findRoute(ctx.graph, origin, destination);
-  if (!route) return { ok: false, payload: { error: "no_route", origin, destination } };
-  verifyRoute(ctx.graph, route);
-
-  const quote = ctx.createQuote(route);
-  state.route = route;
+  const quote = ctx.createQuote(itinerary);
   state.quote = quote;
   return {
     ok: true,
@@ -197,7 +229,7 @@ function createQuoteTool(args: Record<string, unknown>, ctx: ToolContext, state:
       quoteId: quote.id,
       expiresAt: quote.expiresAt,
       bookingRequiresUserConfirmation: true,
-      ...routePayload(route),
+      ...itineraryPayload(itinerary),
     },
   };
 }
@@ -207,9 +239,14 @@ function ticketsPayload(tickets: Ticket[]) {
     count: tickets.length,
     tickets: tickets.map((ticket) => ({
       id: ticket.id,
-      route: `${ticket.origin} → ${ticket.destination}`,
+      route:
+        ticket.journeys.length > 1
+          ? ticket.journeys.map((journey) => `${journey.origin} → ${journey.destination}`).join(" / ")
+          : `${ticket.origin} → ${ticket.destination}`,
+      passengers: ticket.passengers,
       totalDistance: formatKm(ticket.totalDistanceKm),
-      price: formatUsd(ticket.priceUsd),
+      farePerPassenger: formatUsd(ticket.priceUsd),
+      orderTotal: formatUsd(ticket.totalPriceUsd),
       bookedAt: ticket.bookedAt,
     })),
   };

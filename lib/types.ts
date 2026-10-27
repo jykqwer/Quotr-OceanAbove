@@ -11,15 +11,28 @@ export interface Leg {
   distanceKm: number;
 }
 
-export interface Quote {
-  id: string;
-  conversationId: string;
+/** One city pair of the trip. A single-trip booking has exactly one journey. */
+export interface Journey {
   origin: string;
   destination: string;
   legs: Leg[];
   transfers: string[];
   totalDistanceKm: number;
+}
+
+export interface Quote {
+  id: string;
+  conversationId: string;
+  origin: string;
+  destination: string;
+  journeys: Journey[];
+  passengers: string[];
+  /** Sum of every journey distance (each journey being the sum of its rounded legs). */
+  totalDistanceKm: number;
+  /** Fare for one passenger: round(totalDistanceKm × 0.13, 2). */
   priceUsd: number;
+  /** priceUsd × passengers.length, rounded to 2 dp. */
+  totalPriceUsd: number;
   status: QuoteStatus;
   createdAt: string;
   expiresAt: string;
@@ -32,11 +45,12 @@ export interface Ticket {
   quoteId: string;
   origin: string;
   destination: string;
-  legs: Leg[];
+  journeys: Journey[];
+  passengers: string[];
   totalDistanceKm: number;
   priceUsd: number;
+  totalPriceUsd: number;
   bookedAt: string;
-  passenger: string;
 }
 
 export interface ToolTrace {

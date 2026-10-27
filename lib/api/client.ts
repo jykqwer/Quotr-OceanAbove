@@ -74,8 +74,16 @@ export const api = {
 
   logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),
 
-  listConversations: () =>
-    request<{ conversations: Conversation[] }>("/api/conversations"),
+  listConversations: (options: { search?: string; cursor?: string | null; limit?: number } = {}) => {
+    const params = new URLSearchParams();
+    if (options.search) params.set("q", options.search);
+    if (options.cursor) params.set("cursor", options.cursor);
+    if (options.limit) params.set("limit", String(options.limit));
+    const query = params.toString();
+    return request<{ conversations: Conversation[]; nextCursor: string | null; total: number }>(
+      `/api/conversations${query ? `?${query}` : ""}`,
+    );
+  },
 
   createConversation: () =>
     request<{ conversation: Conversation }>("/api/conversations", {
@@ -98,6 +106,17 @@ export const api = {
           method: "POST",
           body: JSON.stringify(payload),
         }),
+
+  createQuoteRequest: (payload: {
+    conversationId?: string;
+    journeys: { origin: string; destination: string }[];
+    passengers: string[];
+    lang: Lang;
+  }) =>
+    request<ChatPayload>("/api/quotes", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   consentQuote: (quoteId: string, snapshotHash: string) =>
     request<{ nonce: string; expiresAt: string; snapshotHash: string }>(

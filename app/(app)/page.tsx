@@ -6,7 +6,8 @@ import { ArrowRightIcon, ClockIcon, PlusIcon } from "@/components/icons";
 import { ChatComposer } from "@/components/chat-composer";
 import { MessageBubble } from "@/components/message-bubble";
 import { NetworkMap } from "@/components/network-map";
-import { api } from "@/lib/api/client";
+import { CitySelect, type CityGroups } from "@/components/city-select";
+import { ApiError, api } from "@/lib/api/client";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
@@ -27,6 +28,8 @@ export default function HomePage() {
 
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+  const [extraLegs, setExtraLegs] = useState<{ origin: string; destination: string }[]>([]);
+  const [passengers, setPassengers] = useState("");
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
 
@@ -71,8 +74,15 @@ export default function HomePage() {
   }, [network]);
 
   const send = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
+    async (
+      input:
+        | string
+        | { journeys: { origin: string; destination: string }[]; passengers: string[] },
+    ) => {
+      const trimmed =
+        typeof input === "string"
+          ? input.trim()
+          : input.journeys.map((journey) => `${journey.origin} → ${journey.destination}`).join(" · ");
       if (!trimmed) return;
       setSending(true);
       setError(null);
@@ -91,23 +101,35 @@ export default function HomePage() {
       ]);
 
       try {
-        const result = await api.chat(
-          {
-            conversationId: conversationId ?? undefined,
-            text: trimmed,
-            lang,
-          },
-          {
-            onUserMessage: (message) =>
-              setMessages((current) =>
-                current.map((item) => (item.id === optimisticId ? message : item)),
-              ),
-            onStep: (trace) =>
-              setLive((current) => (current ? { ...current, tools: [...current.tools, trace] } : current)),
-            onDelta: (chunk) =>
-              setLive((current) => (current ? { ...current, text: current.text + chunk } : current)),
-          },
-        );
+        const result =
+          typeof input === "string"
+            ? await api.chat(
+                {
+                  conversationId: conversationId ?? undefined,
+                  text: trimmed,
+                  lang,
+                },
+                {
+                  onUserMessage: (message) =>
+                    setMessages((current) =>
+                      current.map((item) => (item.id === optimisticId ? message : item)),
+                    ),
+                  onStep: (trace) =>
+                    setLive((current) =>
+                      current ? { ...current, tools: [...current.tools, trace] } : current,
+                    ),
+                  onDelta: (chunk) =>
+                    setLive((current) =>
+                      current ? { ...current, text: current.text + chunk } : current,
+                    ),
+                },
+              )
+            : await api.createQuoteRequest({
+                conversationId: conversationId ?? undefined,
+                journeys: input.journeys,
+                passengers: input.passengers,
+                lang,
+              });
         setConversationId(result.conversation.id);
         setMessages((current) => [
           ...current.filter(
@@ -116,9 +138,13 @@ export default function HomePage() {
           result.userMessage,
           result.assistantMessage,
         ]);
-      } catch {
+      } catch (cause) {
         setMessages((current) => current.filter((message) => message.id !== optimisticId));
-        setError(t("chat.errorGeneric"));
+        setError(
+          cause instanceof ApiError && cause.code === "no_route"
+            ? t("home.noRoute")
+            : t("chat.errorGeneric"),
+        );
       } finally {
         setLive(null);
         setSending(false);
@@ -134,11 +160,30 @@ export default function HomePage() {
       setError(t("home.sameCity"));
       return;
     }
-    void send(`${origin} → ${destination}`);
+    const incomplete = extraLegs.some((leg) => !leg.origin || !leg.destination || leg.origin === leg.destination);
+    if (incomplete) {
+      setError(t("home.sameCity"));
+      return;
+    }
+    void send({
+      journeys: [
+        { origin, destination },
+        ...extraLegs.map((leg) => ({ origin: leg.origin, destination: leg.destination })),
+      ],
+      passengers: passengers
+        .split(/[,，、;；]/)
+        .map((name) => name.trim())
+        .filter(Boolean),
+    });
   }
 
-  function resetThread() {
-    setConversationId(null);
+  function updateLeg(index: number, field: "origin" | "destination", value: string) {
+    setExtraLegs((current) =>
+      current.map((leg, position) => (position === index ? { ...leg, [field]: value } : leg)),
+    );
+  }
+
+  function resetThread() {    setConversationId(null);
     setMessages([]);
     setError(null);
     setOrigin("");
@@ -161,7 +206,7 @@ export default function HomePage() {
   const latest = conversations[0];
   const recent = tickets.slice(0, 3);
   const pinned = tickets.find((ticket) => ticket.id === pinnedId) ?? null;
-  const highlight = hoverLegs ?? pinned?.legs ?? null;
+  const highlight = hoverLegs ?? ticketLegs(pinned);
   const activeConversation = conversations.find((item) => item.id === conversationId) ?? null;
 
   return (
@@ -210,9 +255,9 @@ export default function HomePage() {
                     className={`cursor-pointer border-b border-white/5 last:border-0 hover:bg-white/[0.04] focus:bg-white/[0.04] focus:outline-none ${
                       pinnedId === ticket.id ? "bg-sunset-500/[0.08]" : ""
                     }`}
-                    onMouseEnter={() => setHoverLegs(ticket.legs)}
+                    onMouseEnter={() => setHoverLegs(ticketLegs(ticket))}
                     onMouseLeave={() => setHoverLegs(null)}
-                    onFocus={() => setHoverLegs(ticket.legs)}
+                    onFocus={() => setHoverLegs(ticketLegs(ticket))}
                     onBlur={() => setHoverLegs(null)}
                     onClick={() => setPinnedId((current) => (current === ticket.id ? null : ticket.id))}
                     onKeyDown={(event) => {
@@ -238,7 +283,7 @@ export default function HomePage() {
                       {formatKm(ticket.totalDistanceKm)}
                     </td>
                     <td className="mono px-4 py-2 text-right text-[12px] text-sand">
-                      {formatUsd(ticket.priceUsd)}
+                      {formatUsd(ticket.totalPriceUsd)}
                     </td>
                   </tr>
                 ))}
@@ -330,96 +375,81 @@ export default function HomePage() {
 
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-2">
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="origin" className="col-head mb-1 block">
-                    {t("home.fromCity")}
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="origin"
-                      className="select"
-                      value={origin}
-                      onChange={(event) => setOrigin(event.target.value)}
-                    >
-                      <option value="">{t("home.selectCity")}</option>
-                      <optgroup label={t("map.statHubs")}>
-                        {groups.hubs.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label={t("map.statCities")}>
-                        {groups.cities.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      {groups.unserved.length > 0 && (
-                        <optgroup label={t("home.noServiceGroup")}>
-                          {groups.unserved.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-500"
-                    >
-                      ▾
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="destination" className="col-head mb-1 block">
-                    {t("home.toCity")}
-                  </label>
-                  <div className="relative">
-                    <select
-                      id="destination"
-                      className="select"
-                      value={destination}
-                      onChange={(event) => setDestination(event.target.value)}
-                    >
-                      <option value="">{t("home.selectCity")}</option>
-                      <optgroup label={t("map.statHubs")}>
-                        {groups.hubs.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label={t("map.statCities")}>
-                        {groups.cities.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      {groups.unserved.length > 0 && (
-                        <optgroup label={t("home.noServiceGroup")}>
-                          {groups.unserved.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-500"
-                    >
-                      ▾
-                    </span>
-                  </div>
-                </div>
+                <CitySelect
+                  id="origin"
+                  label={t("home.fromCity")}
+                  value={origin}
+                  onChange={setOrigin}
+                  groups={groups}
+                />
+                <CitySelect
+                  id="destination"
+                  label={t("home.toCity")}
+                  value={destination}
+                  onChange={setDestination}
+                  groups={groups}
+                />
               </div>
+
+              {extraLegs.map((leg, index) => (
+                <div key={`leg-${index}`} className="border-l-2 border-sunset-500/30 pl-2">
+                  <div className="flex items-center justify-between">
+                    <span className="mono text-[9px] uppercase tracking-[0.14em] text-sunset-300/70">
+                      {t("home.legN", { n: index + 2 })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setExtraLegs((current) => current.filter((_, i) => i !== index))}
+                      className="text-[10px] text-slate-600 transition-colors hover:text-rose-300"
+                    >
+                      {t("home.removeLeg")}
+                    </button>
+                  </div>
+                  <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <CitySelect
+                      id={`leg-${index}-origin`}
+                      label={t("home.fromCity")}
+                      value={leg.origin}
+                      onChange={(value) => updateLeg(index, "origin", value)}
+                      groups={groups}
+                    />
+                    <CitySelect
+                      id={`leg-${index}-destination`}
+                      label={t("home.toCity")}
+                      value={leg.destination}
+                      onChange={(value) => updateLeg(index, "destination", value)}
+                      groups={groups}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto]">
+                <div className="min-w-0">
+                  <label htmlFor="passengers" className="col-head mb-1 block">
+                    {t("home.passengers")}
+                  </label>
+                  <input
+                    id="passengers"
+                    className="field"
+                    value={passengers}
+                    onChange={(event) => setPassengers(event.target.value)}
+                    placeholder={t("home.passengersPlaceholder")}
+                    aria-describedby="passengers-hint"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExtraLegs((current) => [...current, { origin: "", destination: "" }])}
+                  disabled={extraLegs.length >= 3}
+                  className="btn-quiet h-9 justify-center border border-dashed border-white/15 px-3 disabled:opacity-40"
+                >
+                  + {t("home.addLeg")}
+                </button>
+              </div>
+              <p id="passengers-hint" className="text-[10px] leading-relaxed text-slate-600">
+                {t("home.passengersHint")}
+              </p>
 
               <div className="flex items-center gap-2">
                 <button
@@ -497,4 +527,10 @@ export default function HomePage() {
       </section>
     </div>
   );
+}
+
+/** The map highlights one continuous line, so multi-city tickets flatten. */
+function ticketLegs(ticket: Ticket | null | undefined): Leg[] | null {
+  if (!ticket) return null;
+  return ticket.journeys.flatMap((journey) => journey.legs);
 }

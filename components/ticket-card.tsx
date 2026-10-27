@@ -1,6 +1,6 @@
 "use client";
 
-import { LegTable } from "@/components/leg-timeline";
+import { JourneyList } from "@/components/journey-list";
 import { Barcode, IssuedStamp, PerforatedRule } from "@/components/pass-parts";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/lang-provider";
@@ -42,12 +42,15 @@ export function TicketCard({ ticket }: { ticket: Ticket }) {
       </div>
 
       <div className="px-4 pb-3">
-        <LegTable legs={ticket.legs} />
+        <JourneyList journeys={ticket.journeys} />
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 pb-3 sm:grid-cols-4">
         <Field label={t("quote.totalDistance")} value={formatKm(ticket.totalDistanceKm)} mono />
-        <Field label={t("tickets.passenger")} value={ticket.passenger} />
+        <Field
+          label={t("quote.passengersLabel")}
+          value={`${ticket.passengers.join(", ")}`}
+        />
         <Field label={t("tickets.bookedAtLabel")} value={formatDateTime(ticket.bookedAt, lang)} mono />
         <Field label={t("tickets.ticketId")} value={ticket.id} mono />
       </div>
@@ -58,10 +61,17 @@ export function TicketCard({ ticket }: { ticket: Ticket }) {
         <IssuedStamp label={t("quote.booked")} />
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <p className="col-head">{t("quote.totalPrice")}</p>
-            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
-              {formatUsd(ticket.priceUsd)}
+            <p className="col-head">
+              {ticket.passengers.length > 1 ? t("quote.orderTotal") : t("quote.totalPrice")}
             </p>
+            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
+              {formatUsd(ticket.passengers.length > 1 ? ticket.totalPriceUsd : ticket.priceUsd)}
+            </p>
+            {ticket.passengers.length > 1 && (
+              <p className="mono mt-1 text-[10.5px] text-ink-600">
+                {formatUsd(ticket.priceUsd)} × {ticket.passengers.length}
+              </p>
+            )}
           </div>
           <span className="hidden sm:block">
             <Barcode value={ticket.id} />

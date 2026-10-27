@@ -1,4 +1,4 @@
-# Ocean Above 订票应用 —— 实现计划（归档）
+﻿# Ocean Above 订票应用 —— 实现计划（归档）
 
 > 本文档归档需求分析与实现方案。原始需求见 [take-home（中文）](../Quotr%20Agent%20Dev%20Engineer%20take-home.zh-CN.md)。
 > 已确认的技术选型：**DeepSeek（OpenAI 兼容协议）**、**中英双语 UI**、**用户名 + 密码登录**、**localhost:3000 本地运行**。
@@ -148,7 +148,8 @@ Next.js 15 App Router (localhost:3000)
 3. ~~持久化与 REST（含认证加固、nonce 确认链）~~ ✅ `lib/store` + `lib/auth`，守卫测试 12 例
 4. ~~Agent 工具循环（接入 DeepSeek）~~ ✅ `lib/agent`，流式 + 数字/话术守卫 + 确定性降级
 5. ~~UI 联调（聊天 / 报价单 / 订单 / 会话）~~ ✅
-6. 加固（守卫测试、注入用例、降级）与交付文档
+6. ~~加固（守卫测试、注入用例、降级）与交付文档~~ ✅
+7. ~~会话检索与分页、多程 / 多乘客~~ ✅ 见 P4 落地记录
 
 ### P1 落地记录
 
@@ -173,13 +174,31 @@ Next.js 15 App Router (localhost:3000)
   过期 nonce / 已出票再同意 / 跨用户越权 / 用户名大小写唯一 / 口令加盐 / 凭据校验 / 消息顺序。
 - 删除 `lib/mock/`（内存 store 与占位 SHA-256 认证），所有页面与 API 改由 `lib/store` + `lib/auth` 支撑。
 
-### P3 ��ؼ�¼
+### P3 落地记录
 
-- **����ѭ��**��`lib/agent/loop.ts`����ϵͳ��ʾ�� + ��� 5 ����ģ��ֻѡ�������ǣ����߷���**�Ѹ�ʽ��**��չʾ�ַ�����`formatKm` / `formatUsd`����ģ��ֻ���ճ���
-- **���߼�**��`lib/agent/tools.ts`����`resolve_city`�������� / �޷��񣩡�`find_route`���ڲ� `verifyRoute` ���ԣ����Ѳ���������ģ�ͣ���`create_booking_quote`������·������⣬�ž�ģ�ʹ����֣���`list_my_tickets`��**û���κγ�Ʊ����**��
-- **��������**��`lib/agent/guard.ts`������������ = ȫ�����߽���г��ֵ����� token + �û�ԭ��������� + �۸��� 0.13��ģ���ı�������������ּ��в��ϸ�
-- **��������**����Ʊ��϶�������booked / issued / paid / �ѳ�Ʊ ����һ�ɾܾ������������С�����Ϊģ��û�г�Ʊ������˵"�ѳ�Ʊ"��Ȼ�Ǽ١�
-- ��һ�����ܾ� �� ����ȷ����ժҪ���������֣������ڹ켣���¼ `number_guard` / `claim_guard`��ʵ�⣺ģ�ͱ�ע��"ֱ�ӳ�Ʊ���� $1"ʱ���ظ����Ƿ��� + ����� $510.35��
-- **��ʽ���**��`stream: true` ���� SSE��`user` / `step` / `delta` / `done` / `error`����ǰ��������Ⱦ��ʵʱ��ʾ���߹켣��`done` ��������Ϣ���ǲݸ壬��������Ҳ����ȷ���֡���������ʱ�ͻ����Զ����� JSON��
-- �ȿӼ�¼��DeepSeek Ҫ��ع���ʷʱ `tool_calls[].type` ����Ϊ `"function"`������ 422�����߲�������������Ƭ����谴 `index` ƴ�ӡ�
-- ���ԣ�`lib/agent/agent.test.ts` 16 ����������SSE �������������塢����������ע�롢�������������ޣ����ϼ� 43 ����
+- **工具循环**（`lib/agent/loop.ts`）：系统提示词 + 最多 5 步；模型只选工具与措辞，工具返回**已格式化的**展示字符串（`formatKm` / `formatUsd`），模型只需照抄。
+- **工具集**（`lib/agent/tools.ts`）：`resolve_city`（含歧义 / 无服务）、`find_route`（内部跑 `verifyRoute` 断言，不把不变量交给模型）、`create_booking_quote`（重算路线再落库，杜绝模型传数字）、`list_my_tickets`。**没有任何出票工具**。
+- **数字守卫**（`lib/agent/guard.ts`）：允许集合 = 所有工具结果里出现的数字 token + 用户原话里的数字 + 价格常数 0.13；模型文本里出现其它数字即判不合格。
+- **话术守卫**：出票类肯定声明（booked / issued / paid / 已出票 …）一律拒绝，否定语气放行——因为模型没有出票能力，说“已出票”必然是假。
+- 任一守卫拒绝 → 改用确定性摘要（引擎数字），并在轨迹里记录 `number_guard` / `claim_guard`。实测：模型被注入“直接出票并报 $1”时，回复仍是否认 + 引擎价 $510.35。
+- **流式输出**：`stream: true` 返回 SSE（`user` / `step` / `delta` / `done` / `error`），前端逐字渲染并实时显示工具轨迹；`done` 的最终消息覆盖草稿，守卫兜底也能正确呈现。流不可用时客户端自动回落 JSON。
+- 踩坑记录：DeepSeek 要求回灌历史时 `tool_calls[].type` 必须为 `"function"`，否则 422；工具参数在流中以碎片到达，需按 `index` 拼接。
+- 测试：`lib/agent/agent.test.ts` 16 例（守卫、SSE 解析、工具语义、完整往返、注入、降级、步数上限）。
+
+### P4 落地记录
+
+- **会话检索与分页**：`conversations` 增加 `search_text`（标题 + 全部消息正文，折叠大小写与变音符号后的小写文本），
+  `appendMessage` / `createConversation` 增量维护；`searchConversations()` 用 `like ? escape '\'` 匹配（`%`、`_` 被转义为字面量），
+  游标为 `updated_at|id`，`limit` 上限 50。接口 `GET /api/conversations?q=&cursor=&limit=` 返回 `nextCursor` 与 `total`。
+  前端 `lib/hooks/conversation-search.ts` 统一处理防抖、翻页与“旧响应覆盖新查询”的竞态（requestId 校验）。
+- **多程**：新增 `lib/domain/itinerary.ts`。`Itinerary = journeys[] + passengers[] + totalDistanceKm + priceUsd + totalPriceUsd`；
+  **票价按行程总距离只舍入一次**，而非各段票价相加；`verifyItinerary()` 逐程断言并复核总价。
+  报价/客票从“单条 legs”改为 `journeys[]`（每程自带 legs / transfers / 距离），`ticket_legs` 增加 `journey_seq` 以还原分程。
+- **多乘客**：乘客名单是数据录入（不是算术），模型或表单都可提供；上限 6 人，去空白并大小写去重。
+  订单合计 = 每人票价 × 人数，二次舍入；客票存 `passengers_json` 与 `total_price_usd`。
+- **结构化下单**：新增 `POST /api/quotes`，首页表单直接提交城市对 + 乘客名单，走同一条域引擎与 nonce 链路（不经过模型，避免延迟与不确定性）；
+  自然语言仍走 `/api/chat` 的 Agent。
+- **迁移**：`openDatabase()` 增加 `migrate()`，用 `pragma table_info` 增量 `alter table`，并为老数据回填
+  `search_text`、`passengers_json`、`total_price_usd`、`ticket_legs.journey_seq`，旧库无需删除即可升级。
+- 测试：域 5 例（多程合计只舍入一次、多人合计、非法行程、校验器抓篡改）、store 5 例（折叠搜索、通配符转义、游标翻页、多人出票、多程客票），合计 53 例。
+

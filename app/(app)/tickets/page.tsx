@@ -33,8 +33,9 @@ export default function TicketsPage() {
     };
   }, [t]);
 
-  const totalSpend = tickets.reduce((sum, ticket) => sum + ticket.priceUsd, 0);
+  const totalSpend = tickets.reduce((sum, ticket) => sum + ticket.totalPriceUsd, 0);
   const totalDistance = tickets.reduce((sum, ticket) => sum + ticket.totalDistanceKm, 0);
+  const totalPassengers = tickets.reduce((sum, ticket) => sum + ticket.passengers.length, 0);
 
   return (
     <div className="space-y-4">
@@ -50,7 +51,11 @@ export default function TicketsPage() {
       </header>
 
       <dl className="grid grid-cols-3 divide-x divide-white/10 border border-white/10 bg-abyss-900">
-        <Stat label={t("tickets.totalCount")} value={String(tickets.length)} />
+        <Stat
+          label={t("tickets.totalCount")}
+          value={`${tickets.length}`}
+          note={t("tickets.headsNote", { count: totalPassengers })}
+        />
         <Stat label={t("tickets.totalSpend")} value={formatUsd(totalSpend)} accent />
         <Stat label={t("tickets.totalDistance")} value={formatKm(totalDistance)} />
       </dl>
@@ -78,11 +83,22 @@ export default function TicketsPage() {
   );
 }
 
-function Stat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+function Stat({
+  label,
+  value,
+  note,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  note?: string;
+  accent?: boolean;
+}) {
   return (
     <div className="px-4 py-3">
       <dt className="col-head">{label}</dt>
       <dd className={`mono mt-1.5 text-[16px] ${accent ? "text-sand" : "text-slate-100"}`}>{value}</dd>
+      {note && <dd className="mono mt-0.5 text-[10px] text-slate-600">{note}</dd>}
     </div>
   );
 }
