@@ -7,6 +7,7 @@ import { ChatComposer } from "@/components/chat-composer";
 import { MessageBubble } from "@/components/message-bubble";
 import { NetworkMap } from "@/components/network-map";
 import { CitySelect, type CityGroups } from "@/components/city-select";
+import { DeparturePicker, toLocalInput } from "@/components/departure-picker";
 import { ApiError, api } from "@/lib/api/client";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { suggestions } from "@/lib/i18n/dictionary";
@@ -33,6 +34,8 @@ export default function HomePage() {
   const [departure, setDeparture] = useState(defaultDepartureInput);
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
+  /** Blank passengers means the account holder, so the placeholder names them. */
+  const [userName, setUserName] = useState("");
 
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +50,9 @@ export default function HomePage() {
       }),
       api.listTickets().then(({ tickets: list }) => {
         if (alive) setTickets(list);
+      }),
+      api.me().then(({ user }) => {
+        if (alive) setUserName(user.displayName);
       }),
     ]).catch(() => {
       if (alive) setError(t("common.error"));
@@ -213,7 +219,7 @@ export default function HomePage() {
   }, []);
 
   const inThread = messages.length > 0 || sending;
-  const minDeparture = localInputValue(new Date());
+  const minDeparture = toLocalInput(new Date());
   const latest = conversations[0];
   const recent = tickets.slice(0, 3);
   const pinned = tickets.find((ticket) => ticket.id === pinnedId) ?? null;
@@ -440,7 +446,7 @@ export default function HomePage() {
                     className="field"
                     value={passengers}
                     onChange={(event) => setPassengers(event.target.value)}
-                    placeholder={t("home.passengersPlaceholder")}
+                    placeholder={userName || t("home.passengersPlaceholder")}
                   />
                 </div>
                 <button
@@ -463,16 +469,12 @@ export default function HomePage() {
               </div>
 
               <div className="min-w-0">
-                <label htmlFor="departure" className="col-head mb-1 block">
-                  {t("home.departure")}
-                </label>
-                <input
+                <DeparturePicker
                   id="departure"
-                  type="datetime-local"
-                  className="field mono"
+                  label={t("home.departure")}
                   value={departure}
                   min={minDeparture}
-                  onChange={(event) => setDeparture(event.target.value)}
+                  onChange={setDeparture}
                 />
               </div>
 
@@ -549,18 +551,12 @@ function ticketLegs(ticket: Ticket | null | undefined): Leg[] | null {
   return ticket.journeys.flatMap((journey) => journey.legs);
 }
 
-/** `datetime-local` needs a local "YYYY-MM-DDTHH:mm" value. */
-function localInputValue(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 /** Default departure: tomorrow 09:00 local. */
 function defaultDepartureInput(): string {
   const date = new Date();
   date.setDate(date.getDate() + 1);
   date.setHours(9, 0, 0, 0);
-  return localInputValue(date);
+  return toLocalInput(date);
 }
 
 /** The route the current thread is discussing, so the map keeps showing it. */

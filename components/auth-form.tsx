@@ -15,6 +15,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
   const [mode, setMode] = useState<Mode>("signin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +30,8 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           return t("auth.errUsername");
         case "bad_password":
           return t("auth.errPassword");
+        case "bad_display_name":
+          return t("auth.errDisplayName");
         default:
           return t("auth.errGeneric");
       }
@@ -49,6 +52,11 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
       setError(t("auth.errPassword"));
       return;
     }
+    const fullName = displayName.trim();
+    if (mode === "signup" && (fullName.length < 2 || fullName.length > 48)) {
+      setError(t("auth.errDisplayName"));
+      return;
+    }
     if (password.length === 0) {
       setError(t("auth.errInvalid"));
       return;
@@ -59,7 +67,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
       if (mode === "signin") {
         await api.login(name, password);
       } else {
-        await api.register(name, password);
+        await api.register(name, password, fullName);
       }
       router.replace("/");
       router.refresh();
@@ -119,6 +127,23 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
             />
           </div>
 
+          {mode === "signup" && (
+            <div>
+              <label htmlFor="displayName" className="col-head mb-1.5 block">
+                {t("auth.displayName")}
+              </label>
+              <input
+                id="displayName"
+                name="displayName"
+                autoComplete="name"
+                className="field"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder={t("auth.displayNamePlaceholder")}
+              />
+            </div>
+          )}
+
           {error && (
             <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[12px] text-rose-300">
               {error}
@@ -137,7 +162,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           </button>
         </form>
 
-        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-4 py-2">
+        <div className="flex items-center justify-end gap-2 border-t border-white/10 px-4 py-2">
           <button
             type="button"
             onClick={() => {
@@ -148,13 +173,10 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           >
             {mode === "signin" ? t("auth.switchToSignUp") : t("auth.switchToSignIn")}
           </button>
-          <span className="mono text-[10.5px] uppercase tracking-[0.14em] text-slate-700">
-            {t("auth.demoTitle")}
-          </span>
         </div>
 
-        <p className="mono border-t border-white/10 px-4 py-2 text-[11.5px] text-slate-500">
-          {demo.username} · {demo.password}
+        <p className="border-t border-white/10 px-4 py-2 text-[12.5px] text-slate-500">
+          {t("auth.demoLine", { username: demo.username, password: demo.password })}
         </p>
       </div>
     </div>

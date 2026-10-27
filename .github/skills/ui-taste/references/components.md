@@ -142,20 +142,24 @@ Assistant uses the warm rule (the brand speaking); the user uses `border-white/1
 
 Two columns on desktop: the map plus recent tickets on the left, the booking panel on the right. The panel has two modes:
 
-**Idle** — headline, the traditional form (two native `<select>`s grouped as Hubs / Cities, swap between them, departure, a primary "Get quote"), a divider, the natural-language composer, example chips, and the "continue last conversation" card.
+**Idle** — headline, the traditional form (two city pickers grouped as Hubs / Cities, swap between them, departure, a primary "Get quote"), a divider, the natural-language composer, example chips, and the "continue last conversation" card.
 
 The panel has **no title row** — the headline is the only heading. In thread mode a single row carries the conversation title (mono 9.5px, muted) and the "New search" button; there is no persistent "New booking" strip.
 
 **Thread** — the form, the examples and the continue card disappear; the panel becomes a scrollable conversation with the composer pinned at the bottom. Sending from home must never navigate to `/chat`.
 
-Selects use `.select` with a `▾` marker; option groups reuse `map.statHubs` / `map.statCities` so the labels stay bilingual for free.
+**No native pickers.** A `<select>` menu and an `input[type=datetime-local]` popup are drawn by the platform — dark-blue Chrome chrome, system font, its own idea of spacing — and they were the only two controls on the page that looked like another product. Both are replaced by listboxes/calendars built from the tokens:
+
+- `CitySelect` — a `role="combobox"` button that opens a `role="listbox"` panel: a search field (accent-folded, so "bogota" finds "Bogotá"), then group headings reusing `map.statHubs` / `map.statCities` / `home.noServiceGroup`, then rows with a `CheckIcon` on the current value. Arrow keys move, Enter picks, Escape closes. Its panel matches the trigger width (min 264 px).
+- `DeparturePicker` — a `role="dialog"` holding a month grid (Sunday first, weekday heads from `weekdayLabels`, past days disabled) beside two scroll columns for hour and minute, 24 h clock. Picking a day or a minute closes it; picking an hour keeps it open. `ClockIcon` in the field, not a calendar glyph.
+- Both position themselves with `useAnchoredPanel`: **`fixed`, not `absolute`** — the booking panel scrolls (`overflow-y-auto`), so an absolute popover taller than the panel is clipped and its hour/minute columns become unreachable. The hook flips the panel above the trigger when there is no room below, clamps it inside the viewport, and re-places it on scroll/resize.
 
 **Swap** sits *between* origin and destination (`sm:grid-cols-[1fr_auto_1fr]`, aligned to the bottom) and disappears
 entirely once a second city pair is added — swapping a multi-city trip is meaningless.
 
-**Departure** uses a native `datetime-local` (`.field mono`) and defaults to tomorrow 09:00. It never changes the
-price, so it must never look like a filter — and it carries **no hint line**: "every flight is assumed available"
-is our internal model, not something the passenger asked to read.
+**Departure** defaults to tomorrow 09:00. It never changes the price, so it must never look like a filter — and it
+carries **no hint line**: "every flight is assumed available" is our internal model, not something the passenger
+asked to read.
 
 **The composer's blurb belongs to the composer.** The line explaining the quote-then-ticket promise sits
 directly above the input, under the "or ask in your own words" divider — not under the headline. Keep it short
@@ -163,7 +167,8 @@ enough to fit one line in the panel (`text-[13px]`, no `max-w-*`, **never `text-
 splits it mid-word, e.g. 航 / 程).
 
 **Multi-city and passengers stay secondary.** Under the city pair sit a `Passengers` text field (11.5px `.field`,
-placeholder names, **no hint line** — an empty field quietly means the account holder) and a dashed-border, quiet
+whose **placeholder is the signed-in user's name** — an empty field means "just me", and saying so with their own
+name beats any hint line) and a dashed-border, quiet
 `+ Add a leg` button that only grows to 3 extra pairs. Added pairs are indented with a 2px coral left rule,
 labelled `Leg 2` in mono 9px, and carry a text-only `Remove` on the right. The idle panel must still read as
 "one form", not as a builder.

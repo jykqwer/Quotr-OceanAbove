@@ -66,10 +66,10 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }),
 
-  register: (username: string, password: string) =>
+  register: (username: string, password: string, displayName: string) =>
     request<{ user: SessionUser }>("/api/auth/register", {
       method: "POST",
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, displayName }),
     }),
 
   logout: () => request<{ ok: boolean }>("/api/auth/logout", { method: "POST" }),

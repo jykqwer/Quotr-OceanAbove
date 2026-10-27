@@ -356,3 +356,29 @@ Next.js 15 App Router (localhost:3000)
   `home.colBooked` / `home.colDepart`。
 - **「正在显示该航线」整句删除**：地图页脚只留图例；有航线时右侧空着，没有航线时才回落到
   「点击任意城市…」提示。`map.showingRoute` 键一并删除。地图自己已经把航线画出来了，不需要再声明一次。
+
+### P13 落地记录（自绘城市/时间选择器、注册姓名、演示账号一行）
+
+- **原生控件是唯一的破绽**：`<select>` 的展开菜单和 `input[type=datetime-local]` 的日历由浏览器绘制 ——
+  亮蓝色高亮、系统字体、它自己的圆角与间距，和整个暖色订票台完全不像同一个产品，而且**给闭合态加样式
+  也修不了展开态**。两个控件改成自绘：
+  - `CitySelect`：`role="combobox"` 按钮 → `role="listbox"` 面板。面板内有搜索框（先折叠变音符号与大小写，
+    所以 "bogota" 命中 "Bogotá"），分组沿用 `map.statHubs` / `map.statCities` / `home.noServiceGroup`，
+    当前值右侧打勾；方向键移动、Enter 选中、Esc 关闭；宽度跟随触发器（最小 264px）。
+  - `DeparturePicker`：`role="dialog"` 面板，左边月历（周日开头、月份可翻、过去日期禁用），右边小时 + 分钟
+    两列滚动选择（24 小时制，不出现 AM/PM）。选日期或选分钟后关闭，选小时保持打开。触发器用 `ClockIcon`。
+- **踩到的坑：`absolute` 会被裁掉**。两个弹层都在订票面板里，而那个面板是 `overflow-y-auto` ——
+  日历比剩余空间高时，底部的「小时/分钟」两列直接被裁掉、**根本点不到**。改为
+  `useAnchoredPanel`（`position: fixed`）：跟随触发器定位，下方空间不足时翻到上方，并夹在视口内，
+  滚动/缩放时重新定位。实测 312px 视口下弹层 left 8 / right 304，无横向溢出。
+- **演示账号一行**：原来是「还没有账户？立即注册」右边一个「演示账户」标签、下一行才是 `demo · oceanabove`，
+  读不出谁是用户名谁是密码。现在合成一句：「演示账户：用户名 demo · 密码 oceanabove」，
+  再下面不再重复。
+- **注册要有姓名**：表单加「姓名」字段（登录仍只要用户名 + 密码）。`POST /api/auth/register` 校验
+  2–48 字符（`bad_display_name`），`createUser` 用它写 `display_name`。姓名的实际用途是
+  **默认乘客**：乘客框留空即本人，占位符直接显示当前登录用户的姓名（实测注册 "Amy Dylan" 后
+  首页乘客框占位符就是 `Amy Dylan`，导航栏显示「用户 Amy Dylan」）。
+- **「登录身份」→「用户」**：中英同步（`Signed in` → `User`）。四字标签挤在导航右侧没有必要。
+- 细节：`.select` 配方随原生下拉一起删除；新增 `lib/hooks/use-dismiss.ts`（Esc / 点外部关闭）与
+  `lib/hooks/use-anchored-panel.ts`；`lib/format.ts` 增加 `formatMonthYear` / `formatDayLabel` /
+  `formatClock` / `weekdayLabels`，日期文案仍只在 format 层生成。

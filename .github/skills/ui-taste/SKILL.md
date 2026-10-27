@@ -28,7 +28,7 @@ The whole page must feel warm. A cold grey-black page with a warm button bolted 
 
 | Concern | File |
 |---|---|
-| Component recipes (`panel`, `col-head`, `mono`, `display`, `paper`, `select`, `btn-*`) | [app/globals.css](../../../app/globals.css) |
+| Component recipes (`panel`, `col-head`, `mono`, `display`, `paper`, `field`, `btn-*`) | [app/globals.css](../../../app/globals.css) |
 | Tokens (abyss, warm slate, ocean/copper, sunset, sand, lamp, cream, ink), fonts, motion | [tailwind.config.ts](../../../tailwind.config.ts) |
 | Anatomy of pass, table, board row, empty state | [./references/components.md](./references/components.md) |
 | All copy, both languages | [lib/i18n/dictionary.ts](../../../lib/i18n/dictionary.ts) |
@@ -102,6 +102,8 @@ Not allowed: gradient card fills, gradient text, glow on cards, `backdrop-blur`,
 **Generic AI gloss:** purple/blue radial glows, glassmorphism, `rounded-2xl + shadow` on every card, emoji icons, gradient text, centred hero + search box, three nested cards, pill nav, skeleton shimmer, "✨ Smart" microcopy.
 
 **Also wrong here:** gradients as card fills, coral used for borders or body copy, gold for non-monetary things, a second warm light source.
+
+**Platform widgets in a dark product.** A native `<select>` dropdown or an `input[type=datetime-local]` calendar arrives in the browser's own chrome — blue highlights, system font, its own radii — and no amount of styling on the closed control fixes the open state. If a control opens a surface, build that surface from the tokens (`role="listbox"` / `role="dialog"`, `bg-abyss-950`, `border-white/15`, coral selection). Anchor it `fixed` through `useAnchoredPanel` when it lives inside a scrolling panel, or it will be clipped by `overflow-y-auto`.
 
 ## Procedure
 
