@@ -209,6 +209,7 @@ A label, one sentence, one coral action. No illustration.
 - **Recent-ticket rows drive the map**: hovering a row previews its route as gold arcs; clicking pins it (row stays highlighted, map keeps the route). Endpoint nodes are gold dots, transfers are cream.
 - **The open conversation's route is persistent**: with a quote (pending or booked) in the thread, the map keeps drawing it under any hover/pin, and the footer says so.
 - Counts sit top-right and are **buttons**: hovering `711 Cities` or `40 Hubs` opens a list panel with letter buckets (A–C, D–F, …) plus `All`, two columns, scrollable, no search box. Do not show a hub-link count here — two numbers only.
+  The panel is wide and the trigger is small, so **it must not close on leaving the trigger**: it stays open while the pointer crosses the gap, closes when the pointer leaves the panel (with a ~220 ms grace), on `Escape`, or on a click outside. Panel background is opaque, never translucent, so the dots cannot read through the names.
 - Legend and state sit in the footer row; the honesty note gets its own line.
 - The hover tooltip flips below the point near the top and right-aligns past 55% width so it never clips. Non-hub tooltips name the direct hubs; hub tooltips give route/client counts.
 

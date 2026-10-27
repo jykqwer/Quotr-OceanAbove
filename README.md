@@ -108,7 +108,7 @@ locations.db                 唯一数据源（只读）
 | 文件 | 职责 |
 |---|---|
 | `llm.ts` | OpenAI 兼容客户端（DeepSeek），SSE 流式解析，工具调用按 index 拼接参数碎片 |
-| `tools.ts` | 4 个工具：`resolve_city` / `find_itinerary` / `create_booking_quote` / `list_my_tickets`。返回值里带**已格式化的展示字符串**，模型只需照抄 |
+| `tools.ts` | 5 个工具：`resolve_city` / `find_itinerary` / `direct_destinations` / `create_booking_quote` / `list_my_tickets`。返回值里带**已格式化的展示字符串**，模型只需照抄 |
 | `loop.ts` | 系统提示词 + 循环 + 降级；工具结果回灌给模型 |
 | `guard.ts` | 两道守卫：数字白名单、出票话术 |
 | `reply.ts` | 确定性兜底（无 key / 超时 / 守卫拒绝时使用），同样只用引擎数字 |
@@ -119,6 +119,11 @@ locations.db                 唯一数据源（只读）
 2. **话术守卫**：模型永远不能出票，因此**不允许出现"已出票 / booked / issued"这类肯定式声明**（否定语气如 "not booked yet" 放行）。
 
 任一守卫不通过 → 丢弃模型的措辞，改用引擎生成的确定性摘要（价格仍是 `$510.35` 这种引擎值），并在工具轨迹里留一条 `number_guard` / `claim_guard` 记录。所以**模型跑偏最多让文案变生硬，不会让数字或事实跑偏**。
+
+**回复语言由界面决定**：`systemPromptFor(lang)` 会把「用简体中文作答 / answer in English」写进系统提示词，
+因此中文提问不会再冒出英文回答（城市名始终原样保留）。「纽约能直飞哪些城市」这类问题由
+`direct_destinations` 回答：枢纽列出它连的枢纽 + 以它为枢纽的城市，非枢纽列出它能直飞的枢纽，与
+`isDirectFlight` 同一套判定。
 
 流式输出：`stream: true` 时接口返回 SSE（`user` / `step` / `delta` / `done` / `error`），前端边收边渲染文字与工具轨迹；`done` 里的最终消息会**覆盖**草稿，因此守卫兜底后的文案也会正确替换。非流式 JSON 仍保留，流打不开时客户端自动回退。
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/lang-provider";
 import type { Leg, Network, NetworkCity } from "@/lib/types";
 
@@ -79,6 +79,56 @@ export function NetworkMap({
   const [selected, setSelected] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState<"cities" | "hubs" | null>(null);
   const [bucket, setBucket] = useState("all");
+  const closeTimer = useRef<number | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // The list is a wide panel under a small trigger, so leaving the trigger must
+  // not close it: the pointer travels across a gap to reach it. It closes when
+  // the pointer leaves the panel, on Escape, or on a click outside.
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
+  const openList = useCallback(
+    (kind: "cities" | "hubs") => {
+      cancelClose();
+      setListOpen(kind);
+      setBucket("all");
+    },
+    [cancelClose],
+  );
+
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimer.current = window.setTimeout(() => {
+      closeTimer.current = null;
+      setListOpen(null);
+    }, 220);
+  }, [cancelClose]);
+
+  useEffect(() => {
+    if (!listOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (listRef.current?.contains(event.target as Node)) return;
+      setListOpen(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setListOpen(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current);
+        closeTimer.current = null;
+      }
+    };
+  }, [listOpen]);
 
   const index = useMemo(() => {
     if (!network) return null;
@@ -171,18 +221,15 @@ export function NetworkMap({
     <section className="flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-abyss-900">
       <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
         <span className="col-head">{t("map.title")}</span>
-        <span
-          className="mono flex items-center gap-2 text-[10px] text-slate-500"
-          onMouseLeave={() => setListOpen(null)}
-        >
+        {/* Moving from the count into the list crosses a gap where neither is
+            hovered, so closing is deferred and cancelled on re-entry. */}
+        <div className="relative flex items-center">
+        <span className="mono flex items-center gap-2 text-[10px] text-slate-500">
           <span className="flex items-center gap-1">
             <span className="text-slate-300">{network.stats.cities}</span>
             <button
               type="button"
-              onMouseEnter={() => {
-                setListOpen("cities");
-                setBucket("all");
-              }}
+              onMouseEnter={() => openList("cities")}
               onClick={() => {
                 setListOpen((current) => (current === "cities" ? null : "cities"));
                 setBucket("all");
@@ -198,10 +245,7 @@ export function NetworkMap({
             <span className="text-slate-300">{network.stats.hubs}</span>
             <button
               type="button"
-              onMouseEnter={() => {
-                setListOpen("hubs");
-                setBucket("all");
-              }}
+              onMouseEnter={() => openList("hubs")}
               onClick={() => {
                 setListOpen((current) => (current === "hubs" ? null : "hubs"));
                 setBucket("all");
@@ -216,10 +260,11 @@ export function NetworkMap({
 
         {listOpen && (
           <div
-            className="absolute right-3 top-[calc(100%-2px)] z-30 w-[min(92vw,340px)] border border-white/15 bg-abyss-950/98 shadow-pass"
-            onMouseLeave={() => setListOpen(null)}
-          >
-            <div className="flex items-center justify-between border-b border-white/10 px-2.5 py-1.5">
+            ref={listRef}
+            className="absolute right-0 top-full z-30 w-[min(92vw,340px)] border border-white/15 bg-abyss-950 shadow-pass"
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
+          >            <div className="flex items-center justify-between border-b border-white/10 px-2.5 py-1.5">
               <span className="col-head">
                 {listOpen === "hubs" ? t("map.hubList") : t("map.cityList")}
               </span>
@@ -270,6 +315,7 @@ export function NetworkMap({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">

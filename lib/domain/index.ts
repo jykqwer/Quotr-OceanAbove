@@ -3,6 +3,7 @@ import { buildGraph, type DomainGraph } from "@/lib/domain/graph";
 
 export type { DomainGraph } from "@/lib/domain/graph";
 export { buildGraph } from "@/lib/domain/graph";
+export { directDestinations, type DirectDestinations } from "@/lib/domain/network";
 export { EPSILON, PRICE_PER_KM, distanceKm, priceFor, round2 } from "@/lib/domain/pricing";
 export { findRoute, type Route } from "@/lib/domain/route";
 export {

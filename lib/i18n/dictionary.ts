@@ -142,7 +142,7 @@ const en = {
   "home.headline": "Where to?",
   "home.newBooking": "New booking",
   "home.subline":
-    "Describe the trip in your own words. Every leg, transfer and fare is quoted before anything is issued.",
+    "Describe the trip in your own words: every leg and transfer is quoted before anything books.",
   "home.quickPrompts": "Examples",
   "home.continue": "Pick up where you left off",
   "home.continueHint": "Your last conversation is waiting.",
@@ -345,7 +345,7 @@ const zh: Dictionary = {
 
   "home.headline": "飞往哪里？",
   "home.newBooking": "新建订票",
-  "home.subline": "用你自己的话描述行程。每一段航程、每一次中转与票价都会先报价，再出票。",
+  "home.subline": "用你自己的话描述行程：每一段航程与中转都会先报价，再出票。",
   "home.quickPrompts": "示例",
   "home.continue": "继续上次对话",
   "home.continueHint": "上次的对话还在。",

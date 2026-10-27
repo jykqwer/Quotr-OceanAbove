@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { runAgent } from "@/lib/agent/loop";
+import { runAgent, systemPromptFor } from "@/lib/agent/loop";
 import { baseAllowedNumbers, checkClaims, checkNumbers, collectNumbers } from "@/lib/agent/guard";
 import { parseSse, type LlmCompletion, type LlmMessage } from "@/lib/agent/llm";
 import { runTool, type ToolContext, type ToolState } from "@/lib/agent/tools";
@@ -146,8 +146,32 @@ test("resolve_city reports the nearest served city for an unserved one", async (
   assert.equal(payload.nearest.distance, "350.89 km");
 });
 
-test("find_itinerary returns engine numbers in display form", async () => {
-  const state: ToolState = {};
+test("direct_destinations answers \"where does this city fly\"", async () => {
+  const outcome = await runTool("direct_destinations", { city: "Split" }, ctx(), {});
+  const payload = outcome.payload as {
+    city: string;
+    isHub: boolean;
+    destinationCount: number;
+    hubs: string[];
+  };
+
+  assert.equal(outcome.ok, true);
+  assert.equal(payload.city, "Split");
+  assert.equal(payload.isHub, false);
+  assert.equal(payload.destinationCount, 2);
+  assert.deepEqual(payload.hubs, ["Lagos", "Shanghai"]);
+
+  const unknown = await runTool("direct_destinations", { city: "Nowhere City" }, ctx(), {});
+  assert.equal(unknown.ok, false);
+});
+
+test("the reply language follows the interface, not the model's mood", () => {
+  assert.match(systemPromptFor("zh"), /Simplified Chinese/);
+  assert.match(systemPromptFor("en"), /English\. Write every sentence in English/);
+  assert.match(systemPromptFor("zh"), /city names/i, "city names stay untranslated");
+});
+
+test("find_itinerary returns engine numbers in display form", async () => {  const state: ToolState = {};
   const outcome = await runTool(
     "find_itinerary",
     { journeys: [{ origin: "Chengdu", destination: "Split" }] },

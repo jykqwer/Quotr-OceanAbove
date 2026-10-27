@@ -8,6 +8,7 @@ import {
   type Itinerary,
 } from "@/lib/domain/itinerary";
 import { resolveCity } from "@/lib/domain/resolve";
+import { directDestinations } from "@/lib/domain/network";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import type { Quote, Ticket } from "@/lib/types";
 import type { LlmToolSchema } from "@/lib/agent/llm";
@@ -91,6 +92,19 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
     },
   },
   {
+    name: "direct_destinations",
+    description:
+      "List the cities reachable from one city with a single flight. Use this when the passenger asks where a city flies to. Transfers are not included.",
+    parameters: {
+      type: "object",
+      properties: {
+        city: { type: "string", description: "Exact city name from resolve_city." },
+      },
+      required: ["city"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "create_booking_quote",
     description:
       "Create the booking quote the passenger can confirm for exactly these city pairs and travellers. Call this once you have a priced itinerary. This only quotes; it never books.",
@@ -146,6 +160,8 @@ export async function runTool(
       return resolveCityTool(args, ctx);
     case "find_itinerary":
       return priceItinerary(args, ctx, state, false);
+    case "direct_destinations":
+      return directDestinationsTool(args, ctx);
     case "create_booking_quote":
       return priceItinerary(args, ctx, state, true);
     case "list_my_tickets":
@@ -196,8 +212,35 @@ function resolveCityTool(args: Record<string, unknown>, ctx: ToolContext): ToolO
   }
 }
 
-function priceItinerary(
-  args: Record<string, unknown>,
+function directDestinationsTool(args: Record<string, unknown>, ctx: ToolContext): ToolOutcome {
+  const requested = typeof args.city === "string" ? args.city.trim() : "";
+  if (!requested) return { ok: false, payload: { error: "city_required" } };
+
+  const resolution = resolveCity(ctx.graph, requested);
+  if (resolution.status !== "found") {
+    return { ok: false, payload: { error: `city_${resolution.status}`, city: requested } };
+  }
+
+  const direct = directDestinations(ctx.graph, resolution.city);
+  if (!direct) return { ok: false, payload: { error: "city_unknown", city: resolution.city } };
+
+  return {
+    ok: true,
+    payload: {
+      status: "ok",
+      city: direct.city,
+      isHub: direct.isHub,
+      destinationCount: direct.cities.length,
+      hubCount: direct.hubs.length,
+      hubs: direct.hubs,
+      // Spoke cities are the fewest useful names; the hub count above is exact.
+      cities: direct.cities.slice(0, 40),
+      truncated: direct.cities.length > 40,
+    },
+  };
+}
+
+function priceItinerary(  args: Record<string, unknown>,
   ctx: ToolContext,
   state: ToolState,
   alsoCreateQuote: boolean,

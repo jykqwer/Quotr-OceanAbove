@@ -505,7 +505,7 @@ export default function HomePage() {
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
-            <p className="max-w-[42ch] text-[12px] leading-relaxed text-slate-500">
+            <p className="max-w-[42ch] text-balance text-[12px] leading-relaxed text-slate-500">
               {t("home.subline")}
             </p>
             <div className="mt-2">

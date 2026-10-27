@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { loadNetwork } from "@/lib/db/locations";
 import { buildGraph } from "@/lib/domain/graph";
+import { directDestinations } from "@/lib/domain/network";
 import {
   MAX_PASSENGERS,
   buildItinerary,
@@ -270,6 +271,26 @@ test("verifyItinerary catches a tampered total", () => {
       }),
     /not the sum of journeys/,
   );
+});
+
+test("direct destinations match the one-flight rule", () => {
+  // A spoke reaches exactly the hubs it lists.
+  const split = directDestinations(graph, "Split");
+  assert.ok(split);
+  assert.equal(split.isHub, false);
+  assert.deepEqual(split.cities, ["Lagos", "Shanghai"]);
+  assert.deepEqual(split.hubs, split.cities);
+  assert.ok(split.cities.every((name) => isDirectFlight(graph, "Split", name)));
+
+  // A hub reaches other hubs plus the spokes that list it, and nothing else.
+  const newYork = directDestinations(graph, "New York");
+  assert.ok(newYork);
+  assert.equal(newYork.isHub, true);
+  assert.ok(newYork.hubs.length > 0);
+  assert.ok(newYork.cities.length > newYork.hubs.length);
+  assert.ok(newYork.cities.every((name) => isDirectFlight(graph, "New York", name)));
+  assert.ok(!newYork.cities.includes("New York"));
+  assert.equal(directDestinations(graph, "Nowhere City"), null);
 });
 
 test("a departure is required, readable and never changes the fare", () => {
