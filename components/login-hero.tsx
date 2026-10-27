@@ -20,10 +20,10 @@ export function LoginHero() {
         </div>
       </div>
 
-      <h1 className="mt-14 max-w-[420px] text-balance text-[34px] font-medium leading-[1.15] tracking-tight text-slate-100">
+      <h1 className="mt-14 text-balance text-[34px] font-medium leading-[1.15] tracking-tight text-slate-100">
         {t("login.heroTitle")}
       </h1>
-      <p className="mt-4 max-w-[380px] text-[15px] leading-relaxed text-slate-400">
+      <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
         {t("login.heroSubtitle")}
       </p>
     </section>
