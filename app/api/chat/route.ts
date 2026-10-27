@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       text,
       lang,
       tickets: listTickets(db, user.id),
+      passengerName: user.displayName,
       history,
       createQuote: (itinerary) =>
         createQuote(db, { userId: user.id, conversationId: conversation.id, itinerary }),

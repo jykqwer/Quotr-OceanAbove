@@ -37,12 +37,6 @@ export function ChatComposer({
       }}
       className="flex items-stretch border border-white/15 bg-abyss-950 focus-within:border-ocean-400"
     >
-      <span
-        aria-hidden="true"
-        className="mono hidden select-none items-start border-r border-white/10 px-2.5 pt-3 text-[12px] text-ocean-400/70 sm:block"
-      >
-        &gt;
-      </span>
       <textarea
         ref={textareaRef}
         rows={1}

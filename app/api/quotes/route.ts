@@ -23,7 +23,13 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = (await request.json().catch(() => null)) as
-    | { conversationId?: string; journeys?: JourneyRequest[]; passengers?: string[]; lang?: Lang }
+    | {
+        conversationId?: string;
+        journeys?: JourneyRequest[];
+        passengers?: string[];
+        departAt?: string;
+        lang?: Lang;
+      }
     | null;
 
   const journeys = (body?.journeys ?? [])
@@ -36,7 +42,11 @@ export async function POST(request: Request) {
 
   let itinerary;
   try {
-    itinerary = buildItinerary(getGraph(), { journeys, passengers: body?.passengers ?? [] });
+    itinerary = buildItinerary(getGraph(), {
+      journeys,
+      passengers: body?.passengers?.length ? body.passengers : [user.displayName],
+      departAt: body?.departAt,
+    });
   } catch (cause) {
     const reason = cause instanceof ItineraryError ? cause.code : "itinerary_failed";
     const status = reason === "no_route" ? 422 : 400;
@@ -47,7 +57,6 @@ export async function POST(request: Request) {
     .map((journey) => `${journey.origin} → ${journey.destination}`)
     .join(" · ")
     .slice(0, 60);
-
   const conversation =
     (body?.conversationId && getConversation(db, user.id, body.conversationId)) ||
     createConversation(db, user.id, title);

@@ -289,6 +289,7 @@ function toQuote(row: QuoteRow): Quote {
     journeys: snapshot.journeys ?? [],
     passengers: snapshot.passengers ?? [],
     totalDistanceKm: snapshot.totalDistanceKm,
+    departAt: snapshot.departAt ?? "",
     priceUsd: snapshot.priceUsd,
     totalPriceUsd: snapshot.totalPriceUsd ?? snapshot.priceUsd,
     status: row.status,
@@ -333,6 +334,7 @@ export function createQuote(
     journeys: itinerary.journeys,
     passengers: itinerary.passengers,
     totalDistanceKm: itinerary.totalDistanceKm,
+    departAt: itinerary.departAt,
     priceUsd: itinerary.priceUsd,
     totalPriceUsd: itinerary.totalPriceUsd,
   });
@@ -460,6 +462,7 @@ export function confirmQuote(db: Db, input: { userId: string; quoteId: string; n
       journeys,
       passengers,
       totalDistanceKm: snapshot.totalDistanceKm,
+      departAt: snapshot.departAt ?? "",
       priceUsd: snapshot.priceUsd,
       totalPriceUsd: snapshot.totalPriceUsd ?? snapshot.priceUsd,
       bookedAt: nowIso(),
@@ -467,8 +470,8 @@ export function confirmQuote(db: Db, input: { userId: string; quoteId: string; n
 
     db.prepare(
       `insert into tickets (id, user_id, quote_id, origin, destination, total_km, price_usd, total_price_usd,
-                            passengers_json, passenger, created_at)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                            passengers_json, passenger, depart_at, created_at)
+       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       ticket.id,
       input.userId,
@@ -480,6 +483,7 @@ export function confirmQuote(db: Db, input: { userId: string; quoteId: string; n
       ticket.totalPriceUsd,
       JSON.stringify(passengers),
       passengers.join(", "),
+      ticket.departAt,
       ticket.bookedAt,
     );
     const insertLeg = db.prepare(
@@ -521,6 +525,7 @@ interface TicketRow {
   totalPriceUsd: number;
   passengersJson: string;
   passenger: string;
+  departAt: string;
   createdAt: string;
 }
 
@@ -566,6 +571,7 @@ function toTicket(db: Db, row: TicketRow): Ticket {
     journeys,
     passengers,
     totalDistanceKm: row.totalKm,
+    departAt: row.departAt,
     priceUsd: row.priceUsd,
     totalPriceUsd: row.totalPriceUsd || Math.round(row.priceUsd * passengers.length * 100) / 100,
     bookedAt: row.createdAt,
@@ -575,7 +581,7 @@ function toTicket(db: Db, row: TicketRow): Ticket {
 const TICKET_SELECT = `
   select id, quote_id as quoteId, origin, destination, total_km as totalKm, price_usd as priceUsd,
          total_price_usd as totalPriceUsd, passengers_json as passengersJson, passenger,
-         created_at as createdAt
+         depart_at as departAt, created_at as createdAt
     from tickets`;
 
 export function findTicketByQuote(db: Db, quoteId: string): Ticket | null {

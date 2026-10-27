@@ -7,7 +7,9 @@ import { buildGraph } from "@/lib/domain/graph";
 import {
   MAX_PASSENGERS,
   buildItinerary,
+  defaultDeparture,
   normalizePassengers,
+  resolveDeparture,
   verifyItinerary,
 } from "@/lib/domain/itinerary";
 import { PRICE_PER_KM, round2 } from "@/lib/domain/pricing";
@@ -267,5 +269,34 @@ test("verifyItinerary catches a tampered total", () => {
         totalDistanceKm: itinerary.totalDistanceKm + 1,
       }),
     /not the sum of journeys/,
+  );
+});
+
+test("a departure is required, readable and never changes the fare", () => {
+  const now = Date.parse("2026-03-01T10:00:00.000Z");
+  const base = { journeys: [{ origin: "Chengdu", destination: "Split" }], passengers: ["Ada"] };
+
+  // No request → a readable default, and the money is identical either way.
+  const automatic = buildItinerary(graph, base);
+  assert.ok(Number.isFinite(Date.parse(automatic.departAt)));
+
+  const future = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+  const requested = buildItinerary(graph, { ...base, departAt: future });
+  assert.equal(requested.departAt, future);
+  assert.equal(requested.priceUsd, automatic.priceUsd, "the departure never changes the fare");
+
+  assert.throws(() => buildItinerary(graph, { ...base, departAt: "next tuesday" }), /cannot read departure/);
+  assert.throws(
+    () => resolveDeparture(new Date(now - 7 * 60 * 60 * 1000).toISOString(), now),
+    /departure is in the past/,
+  );
+  // A client in another timezone keeps six hours of slack.
+  assert.ok(resolveDeparture(new Date(now - 60 * 60 * 1000).toISOString(), now));
+  assert.equal(Date.parse(resolveDeparture(null, now)), Date.parse(defaultDeparture(now)));
+
+  verifyItinerary(graph, requested);
+  assert.throws(
+    () => verifyItinerary(graph, { ...requested, departAt: "not a date" }),
+    /no readable departure/,
   );
 });

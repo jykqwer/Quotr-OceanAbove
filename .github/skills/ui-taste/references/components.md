@@ -142,11 +142,22 @@ Assistant uses the warm rule (the brand speaking); the user uses `border-white/1
 
 Two columns on desktop: the map plus recent tickets on the left, the booking panel on the right. The panel has two modes:
 
-**Idle** — headline, the traditional form (two native `<select>`s grouped as Hubs / Cities, a swap button, a primary "Get quote"), a divider, the natural-language composer, example chips, and the "continue last conversation" card.
+**Idle** — headline, the traditional form (two native `<select>`s grouped as Hubs / Cities, swap between them, departure, a primary "Get quote"), a divider, the natural-language composer, example chips, and the "continue last conversation" card.
 
-**Thread** — the form, the examples and the continue card disappear; the panel becomes a scrollable conversation with the composer pinned at the bottom and a "New search" button in the header. Sending from home must never navigate to `/chat`.
+The panel has **no title row** — the headline is the only heading. In thread mode a single row carries the conversation title (mono 9.5px, muted) and the "New search" button; there is no persistent "New booking" strip.
+
+**Thread** — the form, the examples and the continue card disappear; the panel becomes a scrollable conversation with the composer pinned at the bottom. Sending from home must never navigate to `/chat`.
 
 Selects use `.select` with a `▾` marker; option groups reuse `map.statHubs` / `map.statCities` so the labels stay bilingual for free.
+
+**Swap** sits *between* origin and destination (`sm:grid-cols-[1fr_auto_1fr]`, aligned to the bottom) and disappears
+entirely once a second city pair is added — swapping a multi-city trip is meaningless.
+
+**Departure** uses a native `datetime-local` (`.field mono`), defaults to tomorrow 09:00, and carries one hint line
+`Any time works — every flight is assumed available.` It never changes the price, so it must never look like a filter.
+
+**The composer's blurb belongs to the composer.** The line explaining "describe the trip in your own words…" sits
+directly above the input, under the "or ask in your own words" divider — not under the headline.
 
 **Multi-city and passengers stay secondary.** Under the city pair sit a `Passengers` text field (11.5px `.field`,
 placeholder names, one hint line `Comma separated; leave blank for yourself`) and a dashed-border, quiet
@@ -193,11 +204,23 @@ A label, one sentence, one coral action. No illustration.
 
 - Flat panel; the ground carries the warmth, the panel adds only a faint ember wash at the bottom edge. No sun, no horizon, no scenery inside a data panel.
 - **All connections are quadratic curves** (`arcPath()`), including hub links, client connectors and highlighted routes.
-- Hubs are **squares**, cities are **dots**, both in pale `lamp` cream — they read as lights. The selected hub turns ember.
-- Selecting a hub turns its links into dashed ember curves with `animate-flow` and curves its client cities in.
+- Hubs are **squares**, cities are **dots**, both in pale `lamp` cream — they read as lights. Hover **or** selection turns either one ember and enlarges it; every dot is hoverable, not just hubs.
+- **Every city is clickable.** A hub reveals the cities it serves (dashed ember arcs, `animate-flow`); a non-hub reveals the hubs it flies to. Same gesture, symmetric result — never make ordinary cities look inert.
 - **Recent-ticket rows drive the map**: hovering a row previews its route as gold arcs; clicking pins it (row stays highlighted, map keeps the route). Endpoint nodes are gold dots, transfers are cream.
-- Legend and counts sit in the footer row; the honesty note gets its own line.
-- The hover tooltip flips below the point near the top and right-aligns past 55% width so it never clips.
+- **The open conversation's route is persistent**: with a quote (pending or booked) in the thread, the map keeps drawing it under any hover/pin, and the footer says so.
+- Counts sit top-right and are **buttons**: hovering `711 Cities` or `40 Hubs` opens a list panel with letter buckets (A–C, D–F, …) plus `All`, two columns, scrollable, no search box. Do not show a hub-link count here — two numbers only.
+- Legend and state sit in the footer row; the honesty note gets its own line.
+- The hover tooltip flips below the point near the top and right-aligns past 55% width so it never clips. Non-hub tooltips name the direct hubs; hub tooltips give route/client counts.
+
+## Ticket list (accordion)
+
+`/tickets` is an **accordion, one open at a time, all collapsed by default**. Collapsed shows: header (id + status),
+`FROM / TO`, then one row with the departure datetime and the amount. Expanded adds the journeys, the facts grid,
+the perforation and the cream stub.
+
+The reason is physical: a scanner must never read the wrong barcode. So the stub (and therefore `Barcode`) is
+**not rendered at all** when collapsed — not hidden with CSS. Toggle is a 24px square with `−` / `+` in mono,
+`aria-expanded` + `aria-controls`, and the state line `Only the open ticket shows its barcode…` sits above the list.
 
 ## Do / Don't
 

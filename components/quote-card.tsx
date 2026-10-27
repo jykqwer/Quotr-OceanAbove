@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { JourneyList } from "@/components/journey-list";
 import { Barcode, IssuedStamp, PerforatedRule } from "@/components/pass-parts";
 import { ApiError, api } from "@/lib/api/client";
-import { formatKm, formatUsd } from "@/lib/format";
+import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/lang-provider";
 import type { Quote, QuoteStatus, Ticket } from "@/lib/types";
 
@@ -23,7 +23,7 @@ export function QuoteCard({
   readOnly?: boolean;
   onUpdated?: (quote: Quote, ticket?: Ticket) => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [current, setCurrent] = useState(quote);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -115,6 +115,12 @@ export function QuoteCard({
 
       <div className="px-4 pb-3">
         <dl className="space-y-2 text-[11.5px]">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
+            <dt className="col-head">{t("pass.departure")}</dt>
+            <dd className="mono text-slate-300 sm:text-right">
+              {current.departAt ? formatDateTime(current.departAt, lang) : "—"}
+            </dd>
+          </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
             <dt className="col-head">{t("quote.passengersLabel")}</dt>
             <dd className="text-slate-300 sm:text-right">

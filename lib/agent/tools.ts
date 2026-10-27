@@ -8,7 +8,7 @@ import {
   type Itinerary,
 } from "@/lib/domain/itinerary";
 import { resolveCity } from "@/lib/domain/resolve";
-import { formatKm, formatUsd } from "@/lib/format";
+import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import type { Quote, Ticket } from "@/lib/types";
 import type { LlmToolSchema } from "@/lib/agent/llm";
 
@@ -18,6 +18,8 @@ export interface ToolContext {
   userId: string;
   conversationId: string;
   tickets: Ticket[];
+  /** Used when the passenger names nobody: the account holder. */
+  defaultPassenger: string;
   /** Injected so tests can exercise the loop without touching SQLite. */
   createQuote: (itinerary: Itinerary) => Quote;
 }
@@ -57,6 +59,12 @@ const PASSENGERS_SCHEMA = {
   items: { type: "string" },
 };
 
+const DEPART_AT_SCHEMA = {
+  type: "string",
+  description:
+    "Requested departure as ISO 8601 (YYYY-MM-DDTHH:mm). Only pass this when the passenger named a date or time; otherwise omit it and the system picks the next available departure.",
+};
+
 export const TOOL_SCHEMAS: LlmToolSchema[] = [
   {
     name: "resolve_city",
@@ -88,7 +96,7 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
       "Create the booking quote the passenger can confirm for exactly these city pairs and travellers. Call this once you have a priced itinerary. This only quotes; it never books.",
     parameters: {
       type: "object",
-      properties: { journeys: JOURNEYS_SCHEMA, passengers: PASSENGERS_SCHEMA },
+      properties: { journeys: JOURNEYS_SCHEMA, passengers: PASSENGERS_SCHEMA, departAt: DEPART_AT_SCHEMA },
       required: ["journeys"],
       additionalProperties: false,
     },
@@ -121,6 +129,7 @@ export function itineraryPayload(itinerary: Itinerary) {
     passengers: itinerary.passengers,
     passengerCount: itinerary.passengers.length,
     totalDistance: formatKm(itinerary.totalDistanceKm),
+    departure: formatDateTime(itinerary.departAt, "en"),
     farePerPassenger: formatUsd(itinerary.priceUsd),
     orderTotal: formatUsd(itinerary.totalPriceUsd),
   };
@@ -208,7 +217,11 @@ function priceItinerary(
   try {
     itinerary = buildItinerary(ctx.graph, {
       journeys,
-      passengers: Array.isArray(args.passengers) ? (args.passengers as string[]) : [],
+      passengers:
+        Array.isArray(args.passengers) && args.passengers.length > 0
+          ? (args.passengers as string[])
+          : [ctx.defaultPassenger],
+      departAt: typeof args.departAt === "string" ? args.departAt : undefined,
     });
   } catch (cause) {
     const error = cause instanceof ItineraryError ? cause.code : "itinerary_failed";
@@ -245,6 +258,7 @@ function ticketsPayload(tickets: Ticket[]) {
           : `${ticket.origin} → ${ticket.destination}`,
       passengers: ticket.passengers,
       totalDistance: formatKm(ticket.totalDistanceKm),
+      departure: ticket.departAt ? formatDateTime(ticket.departAt, "en") : null,
       farePerPassenger: formatUsd(ticket.priceUsd),
       orderTotal: formatUsd(ticket.totalPriceUsd),
       bookedAt: ticket.bookedAt,

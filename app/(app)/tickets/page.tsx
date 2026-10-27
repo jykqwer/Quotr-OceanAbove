@@ -12,6 +12,7 @@ import type { Ticket } from "@/lib/types";
 export default function TicketsPage() {
   const { t } = useI18n();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,8 +75,14 @@ export default function TicketsPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          <p className="text-[10.5px] leading-relaxed text-slate-600">{t("tickets.barcodeHint")}</p>
           {tickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
+            <TicketCard
+              key={ticket.id}
+              ticket={ticket}
+              open={openId === ticket.id}
+              onToggle={() => setOpenId((current) => (current === ticket.id ? null : ticket.id))}
+            />
           ))}
         </div>
       )}

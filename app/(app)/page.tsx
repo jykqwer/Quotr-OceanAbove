@@ -30,6 +30,7 @@ export default function HomePage() {
   const [destination, setDestination] = useState("");
   const [extraLegs, setExtraLegs] = useState<{ origin: string; destination: string }[]>([]);
   const [passengers, setPassengers] = useState("");
+  const [departure, setDeparture] = useState(defaultDepartureInput);
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
 
@@ -77,7 +78,11 @@ export default function HomePage() {
     async (
       input:
         | string
-        | { journeys: { origin: string; destination: string }[]; passengers: string[] },
+        | {
+            journeys: { origin: string; destination: string }[];
+            passengers: string[];
+            departAt?: string;
+          },
     ) => {
       const trimmed =
         typeof input === "string"
@@ -128,6 +133,7 @@ export default function HomePage() {
                 conversationId: conversationId ?? undefined,
                 journeys: input.journeys,
                 passengers: input.passengers,
+                departAt: input.departAt,
                 lang,
               });
         setConversationId(result.conversation.id);
@@ -165,6 +171,11 @@ export default function HomePage() {
       setError(t("home.sameCity"));
       return;
     }
+    const departAt = departure ? new Date(departure).toISOString() : undefined;
+    if (departAt && Number.isNaN(Date.parse(departAt))) {
+      setError(t("home.departureError"));
+      return;
+    }
     void send({
       journeys: [
         { origin, destination },
@@ -174,6 +185,7 @@ export default function HomePage() {
         .split(/[,，、;；]/)
         .map((name) => name.trim())
         .filter(Boolean),
+      departAt,
     });
   }
 
@@ -203,10 +215,11 @@ export default function HomePage() {
   }, []);
 
   const inThread = messages.length > 0 || sending;
+  const minDeparture = localInputValue(new Date());
   const latest = conversations[0];
   const recent = tickets.slice(0, 3);
   const pinned = tickets.find((ticket) => ticket.id === pinnedId) ?? null;
-  const highlight = hoverLegs ?? ticketLegs(pinned);
+  const highlight = hoverLegs ?? ticketLegs(pinned) ?? threadLegs(messages);
   const activeConversation = conversations.find((item) => item.id === conversationId) ?? null;
 
   return (
@@ -296,27 +309,17 @@ export default function HomePage() {
       </div>
 
       <section className="order-1 flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-abyss-900 shadow-pass lg:order-2">
-        <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-sunset-500/[0.07] px-4 py-2">
-          <span className="col-head text-sunset-300/80">{t("home.newBooking")}</span>
-          <div className="flex items-center gap-2">
-            {inThread && (
-              <span className="mono hidden max-w-[9rem] truncate text-[9.5px] uppercase tracking-[0.14em] text-slate-600 sm:block">
+        {inThread ? (
+          <>
+            <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+              <span className="mono min-w-0 flex-1 truncate text-[9.5px] uppercase tracking-[0.14em] text-slate-600">
                 {activeConversation?.title ?? ""}
               </span>
-            )}
-            {inThread ? (
-              <button type="button" onClick={resetThread} className="btn-quiet text-sunset-300/80">
+              <button type="button" onClick={resetThread} className="btn-quiet shrink-0 text-sunset-300/80">
                 <PlusIcon className="h-3 w-3" />
                 {t("home.newSearch")}
               </button>
-            ) : (
-              <span className="mono text-[9px] uppercase tracking-[0.16em] text-slate-700">NLQ</span>
-            )}
-          </div>
-        </div>
-
-        {inThread ? (
-          <>
+            </div>
             <div ref={threadRef} className="scroll-slim min-h-[240px] flex-1 overflow-y-auto px-4 py-4">
               <div className="flex flex-col gap-5">
                 {messages.map((message) => (
@@ -369,12 +372,13 @@ export default function HomePage() {
         ) : (
           <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-4">
             <h1 className="display text-[26px] leading-tight text-slate-50">{t("home.headline")}</h1>
-            <p className="mt-2 max-w-[38ch] text-[12px] leading-relaxed text-slate-400">
-              {t("home.subline")}
-            </p>
 
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-2">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div
+                className={`grid grid-cols-1 items-end gap-2 ${
+                  extraLegs.length > 0 ? "sm:grid-cols-2" : "sm:grid-cols-[1fr_auto_1fr]"
+                }`}
+              >
                 <CitySelect
                   id="origin"
                   label={t("home.fromCity")}
@@ -382,6 +386,20 @@ export default function HomePage() {
                   onChange={setOrigin}
                   groups={groups}
                 />
+                {extraLegs.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOrigin(destination);
+                      setDestination(origin);
+                    }}
+                    title={t("home.swap")}
+                    aria-label={t("home.swap")}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-[13px] text-slate-400 transition hover:border-sunset-400/50 hover:text-sunset-300"
+                  >
+                    ⇄
+                  </button>
+                )}
                 <CitySelect
                   id="destination"
                   label={t("home.toCity")}
@@ -451,28 +469,32 @@ export default function HomePage() {
                 {t("home.passengersHint")}
               </p>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOrigin(destination);
-                    setDestination(origin);
-                  }}
-                  title={t("home.swap")}
-                  aria-label={t("home.swap")}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 text-[13px] text-slate-400 transition hover:border-sunset-400/50 hover:text-sunset-300"
-                >
-                  ⇄
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary flex-1"
-                  disabled={!origin || !destination || origin === destination || sending}
-                >
-                  {t("home.getQuote")}
-                  <ArrowRightIcon className="h-3.5 w-3.5" />
-                </button>
+              <div className="min-w-0">
+                <label htmlFor="departure" className="col-head mb-1 block">
+                  {t("home.departure")}
+                </label>
+                <input
+                  id="departure"
+                  type="datetime-local"
+                  className="field mono"
+                  value={departure}
+                  min={minDeparture}
+                  onChange={(event) => setDeparture(event.target.value)}
+                  aria-describedby="departure-hint"
+                />
               </div>
+              <p id="departure-hint" className="text-[10px] leading-relaxed text-slate-600">
+                {t("home.departureHint")}
+              </p>
+
+              <button
+                type="submit"
+                className="btn-primary w-full"
+                disabled={!origin || !destination || origin === destination || sending}
+              >
+                {t("home.getQuote")}
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
             </form>
 
             <div className="my-4 flex items-center gap-3">
@@ -483,7 +505,12 @@ export default function HomePage() {
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
-            <ChatComposer onSend={send} disabled={sending} />
+            <p className="max-w-[42ch] text-[12px] leading-relaxed text-slate-500">
+              {t("home.subline")}
+            </p>
+            <div className="mt-2">
+              <ChatComposer onSend={send} disabled={sending} />
+            </div>
             {error && <p className="mt-2 text-[11px] text-rose-300">{error}</p>}
 
             <p className="col-head mt-5">{t("home.quickPrompts")}</p>
@@ -533,4 +560,27 @@ export default function HomePage() {
 function ticketLegs(ticket: Ticket | null | undefined): Leg[] | null {
   if (!ticket) return null;
   return ticket.journeys.flatMap((journey) => journey.legs);
+}
+
+/** `datetime-local` needs a local "YYYY-MM-DDTHH:mm" value. */
+function localInputValue(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Default departure: tomorrow 09:00 local. */
+function defaultDepartureInput(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  date.setHours(9, 0, 0, 0);
+  return localInputValue(date);
+}
+
+/** The route the current thread is discussing, so the map keeps showing it. */
+function threadLegs(messages: Message[]): Leg[] | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const quote = messages[index].quote;
+    if (quote) return quote.journeys.flatMap((journey) => journey.legs);
+  }
+  return null;
 }

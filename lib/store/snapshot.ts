@@ -12,6 +12,7 @@ export interface QuoteSnapshot {
   journeys: Journey[];
   passengers: string[];
   totalDistanceKm: number;
+  departAt: string;
   priceUsd: number;
   totalPriceUsd: number;
 }
@@ -34,6 +35,7 @@ export function snapshotOf(source: QuoteSnapshot): QuoteSnapshot {
     })),
     passengers: [...source.passengers],
     totalDistanceKm: source.totalDistanceKm,
+    departAt: source.departAt,
     priceUsd: source.priceUsd,
     totalPriceUsd: source.totalPriceUsd,
   };

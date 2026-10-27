@@ -111,6 +111,7 @@ export const api = {
     conversationId?: string;
     journeys: { origin: string; destination: string }[];
     passengers: string[];
+    departAt?: string;
     lang: Lang;
   }) =>
     request<ChatPayload>("/api/quotes", {

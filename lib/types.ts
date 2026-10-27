@@ -29,6 +29,8 @@ export interface Quote {
   passengers: string[];
   /** Sum of every journey distance (each journey being the sum of its rounded legs). */
   totalDistanceKm: number;
+  /** Requested departure (ISO 8601). Every time is assumed available; it never changes the fare. */
+  departAt: string;
   /** Fare for one passenger: round(totalDistanceKm × 0.13, 2). */
   priceUsd: number;
   /** priceUsd × passengers.length, rounded to 2 dp. */
@@ -48,6 +50,7 @@ export interface Ticket {
   journeys: Journey[];
   passengers: string[];
   totalDistanceKm: number;
+  departAt: string;
   priceUsd: number;
   totalPriceUsd: number;
   bookedAt: string;

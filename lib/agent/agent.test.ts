@@ -20,6 +20,7 @@ function ctx(overrides: Partial<ToolContext> = {}): ToolContext {
     userId: "u_test",
     conversationId: "c_test",
     tickets: [],
+    defaultPassenger: "Tester",
     createQuote: (itinerary) =>
       ({
         id: "q_test",
@@ -49,6 +50,7 @@ function baseInput(overrides: Partial<Parameters<typeof runAgent>[0]> = {}) {
     text: "cheapest from Chengdu to Split",
     lang: "en" as const,
     tickets: [] as Ticket[],
+    passengerName: "Tester",
     createQuote: ctx().createQuote,
     ...overrides,
   };

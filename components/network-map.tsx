@@ -45,6 +45,28 @@ function arcPath(a: Point, b: Point, bow = 0.16): string {
 const GRID_X = [-7500, -5000, -2500, 0, 2500, 5000, 7500];
 const GRID_Y = [-3750, -1250, 1250, 3750];
 
+/** A–C, D–F, … so a 711-city list stays readable. */
+const LETTER_BUCKETS = [
+  { key: "a-c", label: "A–C", from: 65, to: 67 },
+  { key: "d-f", label: "D–F", from: 68, to: 70 },
+  { key: "g-i", label: "G–I", from: 71, to: 73 },
+  { key: "j-l", label: "J–L", from: 74, to: 76 },
+  { key: "m-o", label: "M–O", from: 77, to: 79 },
+  { key: "p-r", label: "P–R", from: 80, to: 82 },
+  { key: "s-u", label: "S–U", from: 83, to: 85 },
+  { key: "v-x", label: "V–X", from: 86, to: 88 },
+  { key: "y-z", label: "Y–Z", from: 89, to: 90 },
+  { key: "other", label: "#", from: 0, to: 64 },
+];
+
+function bucketOf(name: string): string {
+  const code = name.charCodeAt(0);
+  const bucket = LETTER_BUCKETS.find(
+    (entry) => entry.key !== "other" && code >= entry.from && code <= entry.to,
+  );
+  return bucket?.key ?? "other";
+}
+
 export function NetworkMap({
   network,
   highlight = null,
@@ -55,6 +77,8 @@ export function NetworkMap({
   const { t } = useI18n();
   const [hovered, setHovered] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
+  const [listOpen, setListOpen] = useState<"cities" | "hubs" | null>(null);
+  const [bucket, setBucket] = useState("all");
 
   const index = useMemo(() => {
     if (!network) return null;
@@ -92,6 +116,37 @@ export function NetworkMap({
     return points;
   }, [highlight, index]);
 
+  const selectedCity = useMemo(
+    () => (index && selected ? index.byName.get(selected) : undefined),
+    [index, selected],
+  );
+
+  // Hubs light up the cities they serve; a city lights up the hubs it flies to.
+  const related = useMemo(() => {
+    if (!index || !selectedCity) return null;
+    const names = selectedCity.isHub
+      ? (index.clients.get(selectedCity.name) ?? []).map((city) => city.name)
+      : selectedCity.hubs;
+    return new Set(names);
+  }, [index, selectedCity]);
+
+  const cityNames = useMemo(
+    () =>
+      [...(network?.cities ?? [])]
+        .filter((city) => !city.isHub)
+        .map((city) => city.name)
+        .sort((a, b) => a.localeCompare(b)),
+    [network],
+  );
+  const hubNames = useMemo(
+    () =>
+      [...(network?.cities ?? [])]
+        .filter((city) => city.isHub)
+        .map((city) => city.name)
+        .sort((a, b) => a.localeCompare(b)),
+    [network],
+  );
+
   if (!network || !index) {
     return (
       <section className="flex h-full flex-col rounded-lg border border-white/10 bg-abyss-900">
@@ -105,26 +160,116 @@ export function NetworkMap({
     );
   }
 
-  const selectedCity = selected ? index.byName.get(selected) : undefined;
   const focus = hovered ?? selected;
   const focusCity = focus ? index.byName.get(focus) : undefined;
-  const related = selected ? new Set((index.clients.get(selected) ?? []).map((city) => city.name)) : null;
   const focusPoint = focusCity ? toPercent(focusCity.x, focusCity.y) : null;
+  const listNames = listOpen === "hubs" ? hubNames : cityNames;
+  const visibleNames =
+    bucket === "all" ? listNames : listNames.filter((name) => bucketOf(name) === bucket);
 
   return (
     <section className="flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-abyss-900">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+      <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
         <span className="col-head">{t("map.title")}</span>
-        <span className="mono flex items-center gap-2 text-[10px] text-slate-500">
-          <span className="text-slate-300">{network.stats.cities}</span>
-          {t("map.statCities")}
+        <span
+          className="mono flex items-center gap-2 text-[10px] text-slate-500"
+          onMouseLeave={() => setListOpen(null)}
+        >
+          <span className="flex items-center gap-1">
+            <span className="text-slate-300">{network.stats.cities}</span>
+            <button
+              type="button"
+              onMouseEnter={() => {
+                setListOpen("cities");
+                setBucket("all");
+              }}
+              onClick={() => {
+                setListOpen((current) => (current === "cities" ? null : "cities"));
+                setBucket("all");
+              }}
+              aria-expanded={listOpen === "cities"}
+              className="uppercase tracking-[0.08em] text-slate-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-sunset-300"
+            >
+              {t("map.statCities")}
+            </button>
+          </span>
           <span className="text-slate-700">·</span>
-          <span className="text-slate-300">{network.stats.hubs}</span>
-          {t("map.statHubs")}
-          <span className="text-slate-700">·</span>
-          <span className="text-slate-300">{network.stats.links}</span>
-          {t("map.statLinks")}
+          <span className="flex items-center gap-1">
+            <span className="text-slate-300">{network.stats.hubs}</span>
+            <button
+              type="button"
+              onMouseEnter={() => {
+                setListOpen("hubs");
+                setBucket("all");
+              }}
+              onClick={() => {
+                setListOpen((current) => (current === "hubs" ? null : "hubs"));
+                setBucket("all");
+              }}
+              aria-expanded={listOpen === "hubs"}
+              className="uppercase tracking-[0.08em] text-slate-500 underline decoration-dotted underline-offset-2 transition-colors hover:text-sunset-300"
+            >
+              {t("map.statHubs")}
+            </button>
+          </span>
         </span>
+
+        {listOpen && (
+          <div
+            className="absolute right-3 top-[calc(100%-2px)] z-30 w-[min(92vw,340px)] border border-white/15 bg-abyss-950/98 shadow-pass"
+            onMouseLeave={() => setListOpen(null)}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-2.5 py-1.5">
+              <span className="col-head">
+                {listOpen === "hubs" ? t("map.hubList") : t("map.cityList")}
+              </span>
+              <span className="mono text-[9.5px] text-slate-600">{visibleNames.length}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1 border-b border-white/10 px-2 py-1.5">
+              <span className="sr-only">{t("map.filterLabel")}</span>
+              <button
+                type="button"
+                onClick={() => setBucket("all")}
+                aria-pressed={bucket === "all"}
+                className={`mono rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition-colors ${
+                  bucket === "all" ? "bg-ocean-400 text-abyss-950" : "text-slate-500 hover:text-slate-200"
+                }`}
+              >
+                {t("map.listAll")}
+              </button>
+              {LETTER_BUCKETS.map((entry) => (
+                <button
+                  key={entry.key}
+                  type="button"
+                  onClick={() => setBucket(entry.key)}
+                  aria-pressed={bucket === entry.key}
+                  className={`mono rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition-colors ${
+                    bucket === entry.key
+                      ? "bg-ocean-400 text-abyss-950"
+                      : "text-slate-500 hover:text-slate-200"
+                  }`}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="scroll-slim max-h-[220px] overflow-y-auto px-2 py-1.5">
+              {visibleNames.length === 0 ? (
+                <p className="py-2 text-center text-[10.5px] text-slate-600">{t("map.listEmpty")}</p>
+              ) : (
+                <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px] text-slate-400">
+                  {visibleNames.map((name) => (
+                    <li key={name} className="truncate" title={name}>
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">
@@ -137,7 +282,7 @@ export function NetworkMap({
           className="relative block h-full w-full"
           preserveAspectRatio="xMidYMid meet"
           role="img"
-          aria-label={`${t("map.title")}: ${network.stats.cities} ${t("map.statCities")}, ${network.stats.hubs} ${t("map.statHubs")}, ${network.stats.links} ${t("map.statLinks")}`}
+          aria-label={`${t("map.title")}: ${network.stats.cities} ${t("map.statCities")}, ${network.stats.hubs} ${t("map.statHubs")}`}
           onClick={() => setSelected(null)}
         >
           <g className="stroke-lamp-300" strokeOpacity="0.045" strokeWidth="14">
@@ -176,14 +321,22 @@ export function NetworkMap({
               if (city.isHub) return null;
               const [cx, cy] = toSvg(city.x, city.y);
               const isRelated = related?.has(city.name) ?? false;
+              const isFocus = city.name === focus;
+              const isSelected = city.name === selected;
               return (
                 <circle
                   key={city.name}
                   cx={cx}
                   cy={cy}
-                  r={30}
-                  className={isRelated ? "fill-lamp-300" : "fill-lamp-400"}
-                  fillOpacity={related ? (isRelated ? 0.95 : 0.12) : 0.5}
+                  r={isFocus || isSelected ? 54 : 30}
+                  className={
+                    isSelected || isFocus
+                      ? "fill-sunset-400"
+                      : isRelated
+                        ? "fill-lamp-300"
+                        : "fill-lamp-400"
+                  }
+                  fillOpacity={related ? (isRelated || isFocus ? 0.95 : 0.12) : isFocus ? 1 : 0.5}
                 />
               );
             })}
@@ -191,17 +344,33 @@ export function NetworkMap({
 
           {selectedCity && (
             <g fill="none">
-              {(index.clients.get(selectedCity.name) ?? []).map((city) => (
-                <path
-                  key={`hub-${city.name}`}
-                  d={arcPath(selectedCity, city, 0.1)}
-                  className="stroke-sunset-400"
-                  strokeWidth={5}
-                  strokeOpacity={0.4}
-                  strokeDasharray="6 10"
-                  strokeLinecap="round"
-                />
-              ))}
+              {selectedCity.isHub
+                ? (index.clients.get(selectedCity.name) ?? []).map((city) => (
+                    <path
+                      key={`hub-${city.name}`}
+                      d={arcPath(selectedCity, city, 0.1)}
+                      className="stroke-sunset-400"
+                      strokeWidth={5}
+                      strokeOpacity={0.4}
+                      strokeDasharray="6 10"
+                      strokeLinecap="round"
+                    />
+                  ))
+                : selectedCity.hubs.map((hubName) => {
+                    const hub = index.byName.get(hubName);
+                    if (!hub) return null;
+                    return (
+                      <path
+                        key={`city-hub-${hubName}`}
+                        d={arcPath(selectedCity, hub, 0.1)}
+                        className="stroke-sunset-400"
+                        strokeWidth={7}
+                        strokeOpacity={0.75}
+                        strokeDasharray="8 12"
+                        strokeLinecap="round"
+                      />
+                    );
+                  })}
             </g>
           )}
 
@@ -210,14 +379,16 @@ export function NetworkMap({
               if (!city.isHub) return null;
               const [cx, cy] = toSvg(city.x, city.y);
               const isSelected = city.name === selected;
+              const isFocus = city.name === focus;
+              const size = isSelected || isFocus ? 148 : 92;
               return (
                 <rect
                   key={city.name}
-                  x={cx - (isSelected ? 74 : 46)}
-                  y={cy - (isSelected ? 74 : 46)}
-                  width={isSelected ? 148 : 92}
-                  height={isSelected ? 148 : 92}
-                  className={isSelected ? "fill-sunset-500" : "fill-lamp-300"}
+                  x={cx - size / 2}
+                  y={cy - size / 2}
+                  width={size}
+                  height={size}
+                  className={isSelected || isFocus ? "fill-sunset-500" : "fill-lamp-300"}
                 />
               );
             })}
@@ -263,6 +434,37 @@ export function NetworkMap({
           )}
 
           <g>
+            {network.cities.map((city) => {
+              if (city.isHub) return null;
+              const [cx, cy] = toSvg(city.x, city.y);
+              return (
+                <circle
+                  key={`hit-${city.name}`}
+                  cx={cx}
+                  cy={cy}
+                  r={150}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${city.name}, ${t("map.city")}, ${t("map.directHubs", { count: city.hubs.length })}`}
+                  onMouseEnter={() => setHovered(city.name)}
+                  onMouseLeave={() => setHovered((current) => (current === city.name ? null : current))}
+                  onFocus={() => setHovered(city.name)}
+                  onBlur={() => setHovered((current) => (current === city.name ? null : current))}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggle(city.name);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggle(city.name);
+                    }
+                  }}
+                />
+              );
+            })}
             {network.cities.map((city) => {
               if (!city.isHub) return null;
               const [cx, cy] = toSvg(city.x, city.y);
@@ -310,8 +512,9 @@ export function NetworkMap({
           >
             <p className="text-[11.5px] text-slate-100">{focusCity.name}</p>
             <p className="mono text-[9.5px] text-slate-500">
-              {t("map.hubRoutes", { count: index.degree.get(focusCity.name) ?? 0 })} ·{" "}
-              {t("map.directCities", { count: index.clients.get(focusCity.name)?.length ?? 0 })}
+              {focusCity.isHub
+                ? `${t("map.hubRoutes", { count: index.degree.get(focusCity.name) ?? 0 })} · ${t("map.directCities", { count: index.clients.get(focusCity.name)?.length ?? 0 })}`
+                : `${t("map.directHubs", { count: focusCity.hubs.length })} · ${focusCity.hubs.join(" · ")}`}
             </p>
           </div>
         )}
@@ -347,8 +550,7 @@ export function NetworkMap({
             <span className="text-sand">{t("map.showingRoute")}</span>
           ) : (
             t("map.hint")
-          )}
-        </span>
+          )}        </span>
       </div>
 
       <p className="border-t border-white/10 px-4 py-1.5 text-[10px] text-slate-600">{t("map.note")}</p>

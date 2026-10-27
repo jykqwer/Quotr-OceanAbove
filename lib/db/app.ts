@@ -28,10 +28,17 @@ function migrate(db: Db): void {
   addColumn(db, "conversations", "search_text", "text not null default ''");
   addColumn(db, "tickets", "total_price_usd", "real not null default 0");
   addColumn(db, "tickets", "passengers_json", "text not null default '[]'");
+  addColumn(db, "tickets", "depart_at", "text not null default ''");
   addColumn(db, "ticket_legs", "journey_seq", "integer not null default 1");
 
   db.prepare("update tickets set passengers_json = json_array(passenger) where passengers_json = '[]'").run();
   db.prepare("update tickets set total_price_usd = price_usd where total_price_usd = 0").run();
+  // Old tickets have no departure column; take the one the quote was made with.
+  db.prepare(
+    `update tickets set depart_at = coalesce(
+       (select json_extract(q.snapshot_json, '$.departAt') from quotes q where q.id = tickets.quote_id), '')
+     where depart_at = ''`,
+  ).run();
 
   // Rows written before the search column existed have no text to match on.
   const stale = db

@@ -11,6 +11,8 @@ export interface Itinerary {
   journeys: Journey[];
   passengers: string[];
   totalDistanceKm: number;
+  /** Requested departure; every time is assumed available, so it never affects money. */
+  departAt: string;
   /** Fare per passenger, still round(total × 0.13, 2). */
   priceUsd: number;
   totalPriceUsd: number;
@@ -74,6 +76,34 @@ export interface JourneyRequest {
 export interface BuildItineraryInput {
   journeys: JourneyRequest[];
   passengers: string[];
+  departAt?: string | null;
+}
+
+/** Six hours of slack so a client in another timezone is never rejected. */
+export const DEPARTURE_PAST_GRACE_MS = 6 * 60 * 60 * 1000;
+
+/** Tomorrow 09:00 local time — the default when the passenger names no time. */
+export function defaultDeparture(now: number = Date.now()): string {
+  const date = new Date(now);
+  date.setDate(date.getDate() + 1);
+  date.setHours(9, 0, 0, 0);
+  return date.toISOString();
+}
+
+/**
+ * Accepts an ISO timestamp (or anything the Date parser understands) and
+ * rejects values that are already in the past. Every departure is assumed to
+ * exist, so no schedule lookup happens here.
+ */
+export function resolveDeparture(input: string | null | undefined, now: number = Date.now()): string {
+  const raw = (input ?? "").trim();
+  if (!raw) return defaultDeparture(now);
+  const parsed = Date.parse(raw);
+  if (!Number.isFinite(parsed)) throw new ItineraryError("bad_departure", `cannot read departure "${raw}"`);
+  if (parsed < now - DEPARTURE_PAST_GRACE_MS) {
+    throw new ItineraryError("bad_departure", "departure is in the past");
+  }
+  return new Date(parsed).toISOString();
 }
 
 /**
@@ -105,12 +135,14 @@ export function buildItinerary(graph: DomainGraph, input: BuildItineraryInput): 
 
   const totalDistanceKm = round2(journeys.reduce((sum, journey) => sum + journey.totalDistanceKm, 0));
   const passengers = normalizePassengers(input.passengers, "Passenger");
+  const departAt = resolveDeparture(input.departAt);
   const priceUsd = round2(totalDistanceKm * PRICE_PER_KM);
 
   return {
     journeys,
     passengers,
     totalDistanceKm,
+    departAt,
     priceUsd,
     totalPriceUsd: round2(priceUsd * passengers.length),
   };
@@ -152,5 +184,9 @@ export function verifyItinerary(graph: DomainGraph, itinerary: Itinerary): void 
   const orderTotal = round2(itinerary.priceUsd * itinerary.passengers.length);
   if (orderTotal !== itinerary.totalPriceUsd) {
     throw new RouteInvariantError(`order total ${itinerary.totalPriceUsd} is not fare × passengers`);
+  }
+
+  if (!Number.isFinite(Date.parse(itinerary.departAt))) {
+    throw new RouteInvariantError("itinerary has no readable departure");
   }
 }

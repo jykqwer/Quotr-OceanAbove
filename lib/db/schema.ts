@@ -75,6 +75,7 @@ create table if not exists tickets (
   total_price_usd real not null default 0,
   passengers_json text not null default '[]',
   passenger       text not null,
+  depart_at       text not null default '',
   created_at      text not null
 );
 create index if not exists tickets_user on tickets(user_id, created_at desc);
