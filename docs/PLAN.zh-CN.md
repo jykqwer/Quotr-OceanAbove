@@ -382,3 +382,26 @@ Next.js 15 App Router (localhost:3000)
 - 细节：`.select` 配方随原生下拉一起删除；新增 `lib/hooks/use-dismiss.ts`（Esc / 点外部关闭）与
   `lib/hooks/use-anchored-panel.ts`；`lib/format.ts` 增加 `formatMonthYear` / `formatDayLabel` /
   `formatClock` / `weekdayLabels`，日期文案仍只在 format 层生成。
+
+### P14 落地记录（地图填满、页面纵向不留白、注册才讲规则）
+
+- **登录页去掉网络数字表**（CITIES / HUBS / HUB ROUTES）：它与登录动作无关，只是把首屏撑高。
+  `LoginHero` 不再需要 `stats`，`app/login/page.tsx` 也就不必再 `loadNetwork()`；随之删掉
+  `login.feature1–3` 与 `map.statLinks`（唯一使用者）。
+- **地图填满自身面板**：数据是 2:1 的抽象平面（x∈±10000，y∈±5000），之前面板比它"高"，SVG 用
+  `preserveAspectRatio="meet"` 只能按宽度铺满，于是上下各留一条黑边 —— 面板 397px，图只占 323px 中的
+  一部分。现在把图区高度直接绑到 viewBox 比例
+  （`style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}`），面板高度由宽度推出，图**100% 填满自身区域**，
+  且随浏览器缩放/改变窗口实时重算（纯 CSS 比例，无 JS 监听）。
+- **页面纵向不留白**：网格高度原来写 `calc(100dvh - 9.5rem)`，实际 header(57) + main 的 `py-6`(48) 只需
+  104px，多算的 48px 变成了页面底部空白。改为 `calc(100dvh - 6.6rem)` 后两列一直撑到视口底部，
+  实测 1440×900 / 1600×1000 / 1280×700 均 `documentElement.scrollHeight === innerHeight`，无整页滚动。
+- **两侧都被压缩然后放大**：地图改成按比例定高（不再 `flex-1` 抢高度），剩余高度全部给下方「最近机票」，
+  列表在自己的滚动区里滚动；右侧订票面板内容用 `flex min-h-full` + 分隔线 `mt-auto`，多余空间落在
+  表单与输入框之间而不是堆在面板底部。窗口过矮时（如 1280×620）左列改为自身滚动，不会把表格压成 1px。
+- **注册才说明取值规则**：用户名 / 密码都是 **8–16 位字母或数字、不能用符号**，用户名不可重复。
+  这两句只在「创建账户」时显示在每个输入框下方（`usernameRules` / `passwordRules`），登录态完全不出现；
+  登录与注册的输入框都**去掉了占位文字**（标签已经说明了字段，占位符只是噪音）。
+  校验同时落在客户端与 `POST /api/auth/register`（`bad_username` / `bad_password`）。**登录不校验格式**，
+  所以 `demo`（4 位）这类历史账号仍可登录。
+- **演示账号行右对齐**：与上面「已有账户？去登录」的右对齐基线一致。

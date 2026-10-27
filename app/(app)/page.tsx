@@ -227,14 +227,14 @@ export default function HomePage() {
   const activeConversation = conversations.find((item) => item.id === conversationId) ?? null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-9.5rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-      <div className="order-2 flex min-h-0 flex-col gap-4 lg:order-1">
-          <div className="min-h-[320px] flex-1 lg:min-h-0">
-            <NetworkMap network={network} highlight={highlight} />
-          </div>
+    <div className="grid grid-cols-1 gap-4 lg:h-[calc(100dvh-6.6rem)] lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+      <div className="scroll-slim order-2 flex min-h-0 flex-col gap-4 overflow-y-auto lg:order-1">
+        <div className="shrink-0">
+          <NetworkMap network={network} highlight={highlight} />
+        </div>
 
-        <section className="shrink-0 rounded-lg border border-white/10 bg-abyss-900">
-          <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+        <section className="flex min-h-[176px] min-w-0 flex-1 flex-col rounded-lg border border-white/10 bg-abyss-900">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
             <span className="col-head">{t("home.recentTickets")}</span>
             {tickets.length > 0 && (
               <Link href="/tickets" className="btn-quiet">
@@ -245,7 +245,8 @@ export default function HomePage() {
           </div>
 
           {recent.length > 0 ? (
-            <table className="w-full table-fixed border-collapse">
+            <div className="scroll-slim min-h-0 flex-1 overflow-y-auto">
+              <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="border-b border-white/5">
                   <th scope="col" className="col-head px-4 py-1.5 text-left">
@@ -311,15 +312,15 @@ export default function HomePage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           ) : (
             <p className="px-4 py-4 text-[12.5px] text-slate-600">{t("home.noTickets")}</p>
           )}
         </section>
       </div>
 
-      <section className="order-1 flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-abyss-900 shadow-pass lg:order-2">
-        {inThread ? (
+      <section className="order-1 flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-abyss-900 shadow-pass lg:order-2">        {inThread ? (
           <>
             <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
               <span className="mono min-w-0 flex-1 truncate text-[10.5px] uppercase tracking-[0.14em] text-slate-600">
@@ -365,7 +366,8 @@ export default function HomePage() {
           </>
         ) : (
           <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <h1 className="display text-[26px] leading-tight text-slate-50">{t("home.headline")}</h1>
+            <div className="flex min-h-full flex-col">
+              <h1 className="display text-[26px] leading-tight text-slate-50">{t("home.headline")}</h1>
 
             <form onSubmit={handleFormSubmit} className="mt-4 space-y-2">
               <div
@@ -488,7 +490,7 @@ export default function HomePage() {
               </button>
             </form>
 
-            <div className="my-4 flex items-center gap-3">
+            <div className="my-4 mt-auto flex items-center gap-3">
               <span className="h-px flex-1 bg-white/10" />
               <span className="text-[10.5px] uppercase tracking-[0.14em] text-slate-600">
                 {t("home.orAsk")}
@@ -538,6 +540,7 @@ export default function HomePage() {
                 </Link>
               </div>
             )}
+            </div>
           </div>
         )}
       </section>

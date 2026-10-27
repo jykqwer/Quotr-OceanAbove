@@ -235,11 +235,11 @@ export function NetworkMap({
 
   if (!network || !index) {
     return (
-      <section className="flex h-full flex-col rounded-lg border border-white/10 bg-abyss-900">
+      <section className="flex w-full flex-col rounded-lg border border-white/10 bg-abyss-900">
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
           <span className="col-head">{t("map.title")}</span>
         </div>
-        <div className="grid flex-1 place-items-center">
+        <div className="grid place-items-center" style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}>
           <span className="text-[12px] text-slate-600">{t("common.loading")}</span>
         </div>
       </section>
@@ -254,7 +254,7 @@ export function NetworkMap({
     bucket === "all" ? listNames : listNames.filter((name) => bucketOf(name) === bucket);
 
   return (
-    <section className="flex h-full min-h-0 flex-col rounded-lg border border-white/10 bg-abyss-900">
+    <section className="flex w-full flex-col rounded-lg border border-white/10 bg-abyss-900">
       <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
         <span className="col-head">{t("map.title")}</span>
         {/* Moving from the count into the list crosses a gap where neither is
@@ -377,7 +377,10 @@ export function NetworkMap({
         </div>
       </div>
 
-      <div className="relative grid min-h-0 flex-1 place-items-center overflow-hidden">
+      <div
+        className="relative grid w-full place-items-center overflow-hidden"
+        style={{ aspectRatio: `${VIEW_W} / ${VIEW_H}` }}
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_120%,rgba(255,122,69,0.10),transparent_62%)]"

@@ -2,6 +2,20 @@
 
 As implemented. Copy these strings; do not invent parallel ones.
 
+## Sign-in panel
+
+A single board panel, `max-w-[380px]`: title row (label + language switch), the fields, the coral action, a right-aligned
+text link that switches sign-in ⇄ sign-up, and one right-aligned line naming the demo account.
+
+- **No placeholders.** The label already says `Username` / `Password`; a placeholder repeating it in grey is noise, and a
+  placeholder that carries a *rule* ("at least 8 characters") is only valid in the one mode where that rule applies.
+- **Rules belong to sign-up only.** `8–16 letters or digits, no symbols` and `must not be taken` appear as one 11.5px
+  line under each field while `mode === "signup"`, wired with `aria-describedby`. Sign-in shows nothing but the two labels.
+- The demo credentials are one sentence — `Demo account — username demo · password oceanabove` — not a label on one row
+  and a bare `demo · oceanabove` on the next. Put it on the same right edge as the link above it.
+- The left column is a brand mark, one headline and one sentence. **No statistics table**: the number of cities we fly to
+  does not help anyone sign in and it pushed the fold down.
+
 ## Board panel (every section is this)
 
 ```tsx
@@ -230,6 +244,9 @@ A label, one sentence, one coral action. No illustration.
 ## Map panel
 
 - Flat panel; the ground carries the warmth, the panel adds only a faint ember wash at the bottom edge. No sun, no horizon, no scenery inside a data panel.
+- **The panel takes its height from the data's aspect ratio, not from leftover flex space.** The viewBox is 21 040 × 11 040 (~1.9:1). If the panel is taller than that, `preserveAspectRatio="meet"` fits by width and leaves a black band above and below the network — the map looks small inside a big empty box, which is exactly how it was reported. Give the drawing area `style={{ aspectRatio: "21040 / 11040" }}` so it is always exactly as tall as the drawing, and let the neighbouring list take the remaining column height instead.
+- Because the ratio is CSS, the map re-fits on browser zoom and window resize with no listener; do not size it with a JS-measured pixel height.
+- **No vertical blank on the page.** The grid height is `100dvh` minus *header + main padding* only (57 + 48 px ≈ 6.6rem) — not an arbitrary 9.5rem, which quietly left ~48 px of dead space under both columns. Both columns must reach the bottom edge; when the window is too short the column itself scrolls rather than squashing a sibling to nothing.
 - **All connections are quadratic curves** (`arcPath()`), including hub links, client connectors and highlighted routes.
 - Hubs are **squares**, cities are **dots**, both in pale `lamp` cream — they read as lights. Hover **or** selection turns either one ember and enlarges it; every dot is hoverable, not just hubs.
 - **Every city is clickable.** A hub reveals the cities it serves (dashed ember arcs, `animate-flow`); a non-hub reveals the hubs it flies to. Same gesture, symmetric result — never make ordinary cities look inert.

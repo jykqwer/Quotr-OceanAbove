@@ -9,6 +9,10 @@ import { useRouter } from "next/navigation";
 
 type Mode = "signin" | "signup";
 
+/** Sign-up only: 8–16 letters or digits. Login accepts whatever was stored. */
+const ACCOUNT_NAME = /^[A-Za-z0-9]{8,16}$/;
+const ACCOUNT_PASSWORD = /^[A-Za-z0-9]{8,16}$/;
+
 export function AuthForm({ demo }: { demo: { username: string; password: string } }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -44,20 +48,22 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
     setError(null);
 
     const name = username.trim();
-    if (name.length < 3 || name.length > 32) {
-      setError(t("auth.errUsername"));
-      return;
-    }
-    if (mode === "signup" && password.length < 8) {
-      setError(t("auth.errPassword"));
-      return;
-    }
     const fullName = displayName.trim();
-    if (mode === "signup" && (fullName.length < 2 || fullName.length > 48)) {
-      setError(t("auth.errDisplayName"));
-      return;
+    if (mode === "signup") {
+      if (!ACCOUNT_NAME.test(name)) {
+        setError(t("auth.errUsername"));
+        return;
+      }
+      if (!ACCOUNT_PASSWORD.test(password)) {
+        setError(t("auth.errPassword"));
+        return;
+      }
+      if (fullName.length < 2 || fullName.length > 48) {
+        setError(t("auth.errDisplayName"));
+        return;
+      }
     }
-    if (password.length === 0) {
+    if (name.length === 0 || password.length === 0) {
       setError(t("auth.errInvalid"));
       return;
     }
@@ -107,8 +113,13 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               className="field mono"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              placeholder={t("auth.usernamePlaceholder")}
+              aria-describedby={mode === "signup" ? "username-rules" : undefined}
             />
+            {mode === "signup" && (
+              <p id="username-rules" className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
+                {t("auth.usernameRules")}
+              </p>
+            )}
           </div>
 
           <div>
@@ -123,8 +134,13 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               className="field mono"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder={t("auth.passwordPlaceholder")}
+              aria-describedby={mode === "signup" ? "password-rules" : undefined}
             />
+            {mode === "signup" && (
+              <p id="password-rules" className="mt-1 text-[11.5px] leading-relaxed text-slate-600">
+                {t("auth.passwordRules")}
+              </p>
+            )}
           </div>
 
           {mode === "signup" && (
@@ -139,7 +155,6 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
                 className="field"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                placeholder={t("auth.displayNamePlaceholder")}
               />
             </div>
           )}
@@ -175,7 +190,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           </button>
         </div>
 
-        <p className="border-t border-white/10 px-4 py-2 text-[12.5px] text-slate-500">
+        <p className="border-t border-white/10 px-4 py-2 text-right text-[12.5px] text-slate-500">
           {t("auth.demoLine", { username: demo.username, password: demo.password })}
         </p>
       </div>

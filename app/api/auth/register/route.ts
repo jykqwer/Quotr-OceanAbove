@@ -4,6 +4,9 @@ import { cookieAttributes, createSession, serializeCookie, SESSION_COOKIE } from
 import { getDb } from "@/lib/db/app";
 import { createUser } from "@/lib/store";
 
+/** Same rule the form shows: 8–16 letters or digits, nothing else. */
+const ACCOUNT_NAME = /^[A-Za-z0-9]{8,16}$/;
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as
     | { username?: string; password?: string; displayName?: string }
@@ -12,10 +15,10 @@ export async function POST(request: Request) {
   const password = body?.password ?? "";
   const displayName = body?.displayName?.trim() ?? "";
 
-  if (username.length < 3 || username.length > 32) {
+  if (!ACCOUNT_NAME.test(username)) {
     return NextResponse.json({ error: "bad_username" }, { status: 400 });
   }
-  if (password.length < 8) {
+  if (!ACCOUNT_NAME.test(password)) {
     return NextResponse.json({ error: "bad_password" }, { status: 400 });
   }
   if (displayName.length < 2 || displayName.length > 48) {
