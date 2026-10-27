@@ -27,7 +27,7 @@ lib/i18n/       zh/en dictionaries + language context
 lib/api/        typed client used by all pages
 lib/db/         read-only accessors for locations.db (validates the dataset on load)
 lib/domain/     pure graph + route + pricing engine — the single source of truth for numbers
-lib/agent/      deterministic reply orchestration (stands in for the LLM tool loop)
+lib/agent/      LLM 工具循环：llm(流式客户端) / tools / loop / guard / reply(确定性兜底)
 lib/store/      SQLite repositories, snapshot hashing, and the one-time-nonce booking gate
 lib/auth/       scrypt passwords, HMAC-signed session cookie, login rate limiting
 lib/db/app.ts   app database connection + schema (separate file from locations.db)
@@ -45,8 +45,8 @@ These come from the product spec and are easy to break; verify them in any chang
 2. **`hub_links` stores each hub pair once.** Treat every row as an undirected edge; do not assume both directions exist.
 3. **Transfers happen only at hubs.** A valid route is `origin → hub → … → hub → destination`. A shortest path over the full city graph is wrong: it lets passengers change planes in non-hub cities (about 35% of sampled pairs get a wrong, cheaper price). Use the hub-subgraph APSP plus endpoint enumeration. `lib/domain` implements this; do not reimplement graph or pricing math anywhere else, and never inside `lib/store/` or a component.
 4. **Rounding is part of the contract.** Round each leg to 2 dp, `totalDistanceKm` = sum of those rounded legs, `priceUsd = round(total × 0.13, 2)`. Never sum per-leg prices. Displayed numbers must reconcile by hand. Optimality is decided on **unrounded** distances so rounding never flips a candidate; `lib/domain/pricing.ts` is the only place these rules live.
-5. **The model never does arithmetic.** The LLM resolves intent and calls tools; every distance, price and route shown to the user must come from the domain engine/tool result and be rendered verbatim. Never let it invent or recompute a number.
-6. **Nothing is booked without explicit confirmation.** Quote (immutable snapshot) → user confirmation in the UI (one-time nonce bound to the snapshot hash) → ticket. Do not add a "book directly" tool or path that bypasses this, and do not treat conversational "yes" as sufficient.
+5. **The model never does arithmetic.** The LLM resolves intent and calls tools; every distance, price and route shown to the user must come from the domain engine/tool result and be rendered verbatim. This is enforced, not just prompted: tool results carry pre-formatted display strings, and `lib/agent/guard.ts` rejects any numeric token the engine did not produce (`number_guard`) as well as any affirmative booking claim (`claim_guard`). A rejected message falls back to the deterministic summary in `lib/agent/reply.ts`; never weaken or bypass those guards.
+6. **Nothing is booked without explicit confirmation.** Quote (immutable snapshot) → user confirmation in the UI (one-time nonce bound to the snapshot hash) → ticket. Do not add a "book directly" tool or path that bypasses this, and do not treat conversational "yes" as sufficient. The agent has no booking tool at all; `lib/store/confirmQuote` is the only writer of tickets, and the assistant may never claim one was issued.
 7. **Never guess a city.** Ambiguous names (`San Jose` / `San José`, `Santiago` family) must return candidates and ask. A city with no service must be reported with the nearest served city — never silently substituted.
 8. Tie-breaks must stay deterministic: lowest distance → fewest legs → lexicographic city sequence.
 
@@ -58,7 +58,8 @@ These come from the product spec and are easy to break; verify them in any chang
 - **Styling**: warm golden-hour palette — `panel` (`rounded-lg border border-white/10 bg-abyss-900`), warm `slate` remapped in the Tailwind config, `col-head` micro-labels, `mono` for every number, `display` serif for city names on passes, `paper` for the cream ticket stub. Ember (`sunset-500`) is the one action per screen; gold (`sand`) is money on dark. Map connections are always quadratic curves (`arcPath` in [components/network-map.tsx](./components/network-map.tsx)), never straight lines. The ground must stay warm — no neutral or cool grey-black. Tokens live in [tailwind.config.ts](./tailwind.config.ts).
 - **Types**: shared shapes belong in [lib/types.ts](./lib/types.ts); the API client in [lib/api/client.ts](./lib/api/client.ts) is the only place pages call `fetch`.
 - **UI work**: follow the project's design language via the `ui-taste` skill ([.github/skills/ui-taste/SKILL.md](./.github/skills/ui-taste/SKILL.md)) — palette discipline, number display, bilingual layout, and the pre-flight checklist.
-- **Client data flow**: pages fetch on mount with an `alive` guard, keep list state locally, and pass quote updates upward instead of refetching the whole thread.
+- **Client data flow**: pages fetch on mount with an `alive` guard, keep list state locally, and pass quote updates upward instead of refetching the whole thread. Chat goes through `api.chat(payload, hooks)`: with hooks it consumes the SSE stream (`onStep` / `onDelta`), without hooks it uses the plain JSON endpoint, and it falls back to JSON if the stream cannot be opened.
+- **Agent changes**: touch `lib/agent/tools.ts` before `loop.ts`. A new tool must return display-ready strings (via `formatKm` / `formatUsd`) so the numeric guard can accept them, and must never accept numbers from the model. Keep `MAX_STEPS` bounded and keep the deterministic fallback reachable.
 
 ## Security
 
@@ -67,6 +68,7 @@ These come from the product spec and are easy to break; verify them in any chang
 - Passwords use `scrypt` with a per-user salt ([lib/auth/password.ts](./lib/auth/password.ts)); never store or compare a plain or fast digest. Sessions are HMAC-signed cookies whose rows must exist in the `sessions` table.
 - A ticket may only be inserted by `confirmQuote` after a valid, unused, unexpired nonce minted from the exact `snapshotHash` the client rendered. Do not add an alternative write path, an idempotent "already booked" shortcut, or an admin bypass.
 - Never log or expose API keys, session secrets, password hashes, or nonces. `data/` (db + generated session secret) stays gitignored.
+- User text is untrusted input to the model. Keep the injection clause in `SYSTEM_PROMPT`, and never let user text reach a tool that could mutate state without the nonce chain.
 
 ## Deliverables to keep current
 

@@ -3,7 +3,7 @@
 面向航空公司 **Ocean Above** 的 Web 订票应用：用自然语言查航线、比价、确认后出票，并可回看全部机票与历史对话。
 所有城市、坐标与航线均来自 `locations.db`（唯一数据源，只读）。
 
-> 当前进度：**前端页面 + 域引擎 + SQLite 持久化与出票守卫已完成**；对话回复仍是确定性规则编排（LLM 工具循环待接入）。
+> 当前进度：**前端页面 + 域引擎 + SQLite 持久化与出票守卫 + DeepSeek 工具调用循环（含流式输出）已完成**。
 > 需求梳理与实施计划见 [docs/PLAN.zh-CN.md](docs/PLAN.zh-CN.md)。
 
 ---
@@ -14,7 +14,7 @@
 npm install
 cp .env.example .env.local   # 填入 LLM_API_KEY（DeepSeek / 任意 OpenAI 兼容服务）
 npm run dev                  # http://localhost:3000
-npm test                     # 域引擎 + 出票守卫单测（27 例）
+npm test                     # 域引擎 + 出票守卫 + Agent（数字/话术守卫）共 43 例
 npm run oracle               # 重新生成 golden fixtures
 npm run verify:data          # oracle + 单测，数据变更后跑这个
 ```
@@ -24,6 +24,8 @@ npm run verify:data          # oracle + 单测，数据变更后跑这个
 - 也可以直接在登录页注册新账号，新账号的机票与会话是空的，便于验证数据隔离。
 - 应用数据落在 `data/app.db`（自动创建，已 gitignore）；删除该文件即可回到干净种子状态。
 - 会话 Cookie 用 HMAC 签名；生产部署请设置 `SESSION_SECRET`（未设置时自动生成到 `data/.session-secret`）。
+- 对话由 DeepSeek 驱动，配置见 `.env.example`：`LLM_BASE_URL`、`LLM_MODEL`、`LLM_API_KEY`，
+  以及可选的 `LLM_TIMEOUT_MS`（默认 20000）。**未配置 key 时自动降级为确定性回复**，页面与报价照常可用。
 
 ### 其他命令
 
@@ -81,6 +83,27 @@ docs/PLAN.zh-CN.md           需求梳理与实现计划（归档）
 locations.db                 唯一数据源（只读）
 ```
 
+## Agent（lib/agent）—— 模型不碰算术
+
+`POST /api/chat` 跑一个**有上限的工具循环**（最多 5 步）：模型只负责理解意图和挑选工具，数字一律由工具返回。
+
+| 文件 | 职责 |
+|---|---|
+| `llm.ts` | OpenAI 兼容客户端（DeepSeek），SSE 流式解析，工具调用按 index 拼接参数碎片 |
+| `tools.ts` | 4 个工具：`resolve_city` / `find_route` / `create_booking_quote` / `list_my_tickets`。返回值里带**已格式化的展示字符串**，模型只需照抄 |
+| `loop.ts` | 系统提示词 + 循环 + 降级；工具结果回灌给模型 |
+| `guard.ts` | 两道守卫：数字白名单、出票话术 |
+| `reply.ts` | 确定性兜底（无 key / 超时 / 守卫拒绝时使用），同样只用引擎数字 |
+
+**两道守卫**（`npm test` 里逐条锁住）：
+
+1. **数字守卫**：把模型最终文本里的每个数字 token 拿去比对「工具结果中出现的数字集合」；出现引擎没给过的数字（如自己估算的 `3,930 km`、被注入的 `$0`）就判定不合格。
+2. **话术守卫**：模型永远不能出票，因此**不允许出现"已出票 / booked / issued"这类肯定式声明**（否定语气如 "not booked yet" 放行）。
+
+任一守卫不通过 → 丢弃模型的措辞，改用引擎生成的确定性摘要（价格仍是 `$510.35` 这种引擎值），并在工具轨迹里留一条 `number_guard` / `claim_guard` 记录。所以**模型跑偏最多让文案变生硬，不会让数字或事实跑偏**。
+
+流式输出：`stream: true` 时接口返回 SSE（`user` / `step` / `delta` / `done` / `error`），前端边收边渲染文字与工具轨迹；`done` 里的最终消息会**覆盖**草稿，因此守卫兜底后的文案也会正确替换。非流式 JSON 仍保留，流打不开时客户端自动回退。
+
 ## 计算口径
 
 - 距离为 `locations.db` 中两城坐标的欧氏距离（km）。
@@ -128,4 +151,5 @@ locations.db                 唯一数据源（只读）
 
 ## 已知限制（本阶段）
 
-- 对话回复由**确定性规则**生成（`lib/agent/reply.ts`）：它只编排域引擎调用，不编造数字，但还不能理解复杂表述；LLM 工具循环与 SSE 流式输出尚未接入。
+- 对话历史只取最近 8 条作为上下文（没有摘要压缩），超长会话早期信息会丢失。
+- 未实现：会话搜索、分页、`GET /api/tickets/:id`、`GET /api/quotes/:id`、真实支付与库存。

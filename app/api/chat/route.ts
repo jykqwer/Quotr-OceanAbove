@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
-import { buildReply } from "@/lib/agent/reply";
+import { runAgent } from "@/lib/agent/loop";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/app";
 import { getGraph } from "@/lib/domain";
-import { verifyRoute } from "@/lib/domain/verify";
-import { appendMessage, createConversation, createQuote, getConversation, getQuote, listTickets } from "@/lib/store";
-import type { Lang, ToolTrace } from "@/lib/types";
+import {
+  appendMessage,
+  createConversation,
+  createQuote,
+  getConversation,
+  getQuote,
+  listMessages,
+  listTickets,
+} from "@/lib/store";
+import type { Lang, Message, ToolTrace } from "@/lib/types";
+
+const encoder = new TextEncoder();
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = (await request.json().catch(() => null)) as
-    | { conversationId?: string; text?: string; lang?: Lang }
+    | { conversationId?: string; text?: string; lang?: Lang; stream?: boolean }
     | null;
 
   const text = body?.text?.trim() ?? "";
@@ -26,38 +35,78 @@ export async function POST(request: Request) {
 
   const userMessage = appendMessage(db, conversation.id, { role: "user", content: text });
 
-  const tools: ToolTrace[] = [];
-  const report = (name: string, ok: boolean, ms: number) => tools.push({ name, ok, ms });
+  // Prior turns give the model context; the user's own words stay untrusted input.
+  const history = (listMessages(db, user.id, conversation.id) ?? [])
+    .filter((message) => message.id !== userMessage.id)
+    .map((message) => ({ role: message.role, content: message.content }));
 
-  const graph = getGraph();
-  const reply = buildReply(graph, text, lang, listTickets(db, user.id), report);
+  const run = (hooks: { onStep?: (trace: ToolTrace) => void; onDelta?: (chunk: string) => void }) =>
+    runAgent({
+      graph: getGraph(),
+      db,
+      userId: user.id,
+      conversationId: conversation.id,
+      text,
+      lang,
+      tickets: listTickets(db, user.id),
+      history,
+      createQuote: (route) =>
+        createQuote(db, { userId: user.id, conversationId: conversation.id, route }),
+      ...hooks,
+    });
 
-  const route = reply.kind === "route" ? reply.route : null;
-  if (route) {
-    const started = performance.now();
-    verifyRoute(graph, route);
-    report("verify_route", true, Math.round(performance.now() - started));
+  const finalize = (out: Awaited<ReturnType<typeof runAgent>>) => {
+    const assistantMessage = appendMessage(db, conversation.id, {
+      role: "assistant",
+      content: out.content,
+      quoteId: out.quote?.id,
+      tools: out.tools,
+    });
+    return {
+      conversation: getConversation(db, user.id, conversation.id)!,
+      userMessage,
+      assistantMessage: withQuote(assistantMessage, out.quote?.id),
+      passenger: user.displayName,
+    };
+  };
+
+  if (!body?.stream) {
+    return NextResponse.json(finalize(await run({})));
   }
 
-  let quoteId: string | undefined;
-  if (route) {
-    const started = performance.now();
-    const quote = createQuote(db, { userId: user.id, conversationId: conversation.id, route });
-    quoteId = quote.id;
-    report("create_booking_quote", true, Math.round(performance.now() - started));
-  }
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+      };
 
-  const assistantMessage = appendMessage(db, conversation.id, {
-    role: "assistant",
-    content: reply.content,
-    quoteId,
-    tools,
+      try {
+        send("user", userMessage);
+        const out = await run({
+          onStep: (trace) => send("step", trace),
+          onDelta: (chunk) => send("delta", { text: chunk }),
+        });
+        send("done", finalize(out));
+      } catch {
+        send("error", { code: "chat_failed" });
+      } finally {
+        controller.close();
+      }
+    },
   });
 
-  return NextResponse.json({
-    conversation: getConversation(db, user.id, conversation.id),
-    userMessage,
-    assistantMessage: { ...assistantMessage, quote: quoteId ? getQuote(db, quoteId) ?? undefined : undefined },
-    passenger: user.displayName,
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
   });
+}
+
+function withQuote(message: Message, quoteId?: string) {
+  if (!quoteId) return message;
+  const quote = getQuote(getDb(), quoteId);
+  return quote ? { ...message, quote } : message;
 }

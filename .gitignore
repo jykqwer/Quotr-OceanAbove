@@ -21,3 +21,6 @@ __MACOSX/
 
 next-env.d.ts
 *.tsbuildinfo
+
+# python bytecode
+__pycache__/

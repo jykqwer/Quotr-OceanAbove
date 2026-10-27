@@ -10,7 +10,7 @@ import { ListIcon } from "@/components/icons";
 import { api } from "@/lib/api/client";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
-import type { Conversation, Message, Quote, Ticket } from "@/lib/types";
+import type { Conversation, Message, Quote, Ticket, ToolTrace } from "@/lib/types";
 
 export default function ChatPage() {
   const { t, lang } = useI18n();
@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<{ text: string; tools: ToolTrace[] } | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const skipLoadFor = useRef<string | null>(null);
@@ -96,6 +97,7 @@ export default function ChatPage() {
   async function handleSend(text: string) {
     setSending(true);
     setError(null);
+    setLive({ text: "", tools: [] });
 
     const optimisticId = `pending-${Date.now()}`;
     setMessages((current) => [
@@ -110,13 +112,20 @@ export default function ChatPage() {
     ]);
 
     try {
-      const result = await api.chat({ conversationId: activeId ?? undefined, text, lang });
+      const result = await api.chat({ conversationId: activeId ?? undefined, text, lang }, {
+        onUserMessage: (message) =>
+          setMessages((current) => current.map((item) => (item.id === optimisticId ? message : item))),
+        onStep: (trace) =>
+          setLive((current) => (current ? { ...current, tools: [...current.tools, trace] } : current)),
+        onDelta: (chunk) =>
+          setLive((current) => (current ? { ...current, text: current.text + chunk } : current)),
+      });
       if (result.conversation.id !== activeId) {
         skipLoadFor.current = result.conversation.id;
         setActiveId(result.conversation.id);
       }
       setMessages((current) => [
-        ...current.filter((message) => message.id !== optimisticId),
+        ...current.filter((message) => message.id !== optimisticId && message.id !== result.userMessage.id),
         result.userMessage,
         result.assistantMessage,
       ]);
@@ -128,6 +137,7 @@ export default function ChatPage() {
       setMessages((current) => current.filter((message) => message.id !== optimisticId));
       setError(t("chat.errorGeneric"));
     } finally {
+      setLive(null);
       setSending(false);
     }
   }
@@ -198,9 +208,41 @@ export default function ChatPage() {
                 <MessageBubble key={message.id} message={message} onQuoteUpdated={handleQuoteUpdated} />
               ))}
               {sending && (
-                <p className="mono pl-12 text-[10px] uppercase tracking-[0.16em] text-slate-600 animate-blink sm:pl-16">
-                  {t("chat.thinking")}
-                </p>
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-4">
+                  <div className="flex items-center gap-2 sm:block sm:w-12 sm:shrink-0 sm:pt-0.5 sm:text-right">
+                    <p className="text-[9.5px] font-medium uppercase tracking-[0.16em] text-sunset-300">OA</p>
+                  </div>
+                  <div className="min-w-0 flex-1 border-l border-sunset-500/45 pl-3">
+                    {live && live.text.length > 0 ? (
+                      <p className="whitespace-pre-line break-words text-[13px] leading-relaxed text-slate-200">
+                        {live.text}
+                        <span aria-hidden="true" className="ml-0.5 animate-blink text-sunset-400">
+                          ▍
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="mono text-[10px] uppercase tracking-[0.16em] text-slate-600 animate-blink">
+                        {t("chat.thinking")}
+                      </p>
+                    )}
+                    {live && live.tools.length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
+                          {t("chat.tools")}
+                        </span>
+                        {live.tools.map((tool, index) => (
+                          <span
+                            key={`live-${tool.name}-${index}`}
+                            className={`mono text-[9.5px] ${tool.ok ? "text-slate-600" : "text-rose-300/80"}`}
+                          >
+                            {tool.name}
+                            <span className="ml-1 text-slate-700">{tool.ms}ms</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
               <div ref={bottomRef} />
             </div>

@@ -14,7 +14,7 @@ export type Reply =
 const TICKET_INTENT = /(ticket|booking|order|booked|reservation|票|订单|行程|预订)/i;
 const ROUTE_INTENT = /(cheap|cheapest|price|fare|cost|route|flight|how much|最便宜|票价|多少钱|航线|航班)/i;
 
-function routeSummary(route: Route, lang: Lang): string {
+export function routeSummary(route: Route, lang: Lang): string {
   const zh = lang === "zh";
   const legs = zh ? `${route.legs.length} 段` : `${route.legs.length} leg${route.legs.length > 1 ? "s" : ""}`;
   const transfers = route.transfers.length
