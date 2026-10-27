@@ -8,9 +8,8 @@ build/
 .env.local
 .env.*.local
 
-# local runtime data
-data/app.db
-data/app.db-journal
+# local runtime data (db + generated session secret)
+data/
 *.log
 
 # raw agent session exports — scrub secrets before committing to "prompt history/"

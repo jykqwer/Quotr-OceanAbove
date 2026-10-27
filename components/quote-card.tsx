@@ -37,18 +37,36 @@ export function QuoteCard({
     setBusy(true);
     setError(null);
     try {
-      const result = await api.confirmQuote(current.id, current.conversationId);
+      // Step 1: prove the user is looking at this exact snapshot.
+      const consent = await api.consentQuote(current.id, current.snapshotHash);
+      // Step 2: exchange the single-use nonce for a ticket.
+      const result = await api.confirmQuote(current.id, consent.nonce);
       setCurrent(result.quote);
       setTicketId(result.ticket.id);
       onUpdated?.(result.quote, result.ticket);
     } catch (cause) {
-      setError(
-        cause instanceof ApiError && cause.code === "quote_unavailable"
-          ? t("quote.confirmError")
-          : t("chat.errorGeneric"),
-      );
+      setError(describeConfirmError(cause));
     } finally {
       setBusy(false);
+    }
+  }
+
+  function describeConfirmError(cause: unknown): string {
+    if (!(cause instanceof ApiError)) return t("chat.errorGeneric");
+    switch (cause.code) {
+      case "expired":
+        return t("quote.errExpired");
+      case "nonce_expired":
+        return t("quote.errNonceExpired");
+      case "snapshot_mismatch":
+      case "snapshot_changed":
+        return t("quote.errSnapshotChanged");
+      case "nonce_used":
+        return t("quote.errNonceUsed");
+      case "not_pending":
+        return t("quote.errNotPending");
+      default:
+        return t("quote.confirmError");
     }
   }
 

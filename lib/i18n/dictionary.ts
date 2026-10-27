@@ -80,6 +80,11 @@ const en = {
   "quote.expires": "Valid 15 min",
   "quote.bookedNote": "Ticket {id} issued — see My tickets.",
   "quote.confirmError": "Booking failed. The quote may have expired.",
+  "quote.errExpired": "This quote has expired. Ask for a fresh one.",
+  "quote.errNonceExpired": "Your confirmation window closed. Press confirm again.",
+  "quote.errSnapshotChanged": "This quote changed since you saw it. Review the new numbers first.",
+  "quote.errNonceUsed": "That confirmation was already used.",
+  "quote.errNotPending": "This quote is no longer awaiting confirmation.",
   "quote.ticketFor": "One ticket · all legs included",
 
   "pass.quoteLabel": "Fare quote",
@@ -247,6 +252,11 @@ const zh: Dictionary = {
   "quote.expires": "15 分钟内有效",
   "quote.bookedNote": "客票 {id} 已出票，可在「我的机票」查看。",
   "quote.confirmError": "出票失败，报价可能已过期。",
+  "quote.errExpired": "该报价已过期，请重新查询。",
+  "quote.errNonceExpired": "确认窗口已关闭，请再次点击确认。",
+  "quote.errSnapshotChanged": "报价内容已变化，请先核对新的数字。",
+  "quote.errNonceUsed": "该确认已被使用。",
+  "quote.errNotPending": "该报价已不在待确认状态。",
   "quote.ticketFor": "一张客票 · 包含全部航段",
 
   "pass.quoteLabel": "报价单",

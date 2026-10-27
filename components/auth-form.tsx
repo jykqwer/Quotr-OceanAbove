@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 
 type Mode = "signin" | "signup";
 
-export function AuthForm() {
+export function AuthForm({ demo }: { demo: { username: string; password: string } }) {
   const { t } = useI18n();
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("signin");
@@ -154,7 +154,7 @@ export function AuthForm() {
         </div>
 
         <p className="mono border-t border-white/10 px-4 py-2 text-[10.5px] text-slate-500">
-          {t("auth.demoHint")}
+          {demo.username} · {demo.password}
         </p>
       </div>
     </div>

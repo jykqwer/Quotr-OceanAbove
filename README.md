@@ -3,8 +3,8 @@
 面向航空公司 **Ocean Above** 的 Web 订票应用：用自然语言查航线、比价、确认后出票，并可回看全部机票与历史对话。
 所有城市、坐标与航线均来自 `locations.db`（唯一数据源，只读）。
 
-> 当前进度：**前端页面已完成（中英双语）**，接口由内存 mock 层提供，方便先验证交互与视觉。
-> 域引擎（最短路线/计价）、SQLite 持久化与真实 LLM Agent 的实施方案见 [docs/PLAN.zh-CN.md](docs/PLAN.zh-CN.md)。
+> 当前进度：**前端页面 + 域引擎 + SQLite 持久化与出票守卫已完成**；对话回复仍是确定性规则编排（LLM 工具循环待接入）。
+> 需求梳理与实施计划见 [docs/PLAN.zh-CN.md](docs/PLAN.zh-CN.md)。
 
 ---
 
@@ -14,7 +14,7 @@
 npm install
 cp .env.example .env.local   # 填入 LLM_API_KEY（DeepSeek / 任意 OpenAI 兼容服务）
 npm run dev                  # http://localhost:3000
-npm test                     # 域引擎单测（对比 Python oracle 的 golden fixtures）
+npm test                     # 域引擎 + 出票守卫单测（27 例）
 npm run oracle               # 重新生成 golden fixtures
 npm run verify:data          # oracle + 单测，数据变更后跑这个
 ```
@@ -22,6 +22,8 @@ npm run verify:data          # oracle + 单测，数据变更后跑这个
 - 需要 Node.js 20+（开发使用 Node 22）；`npm run oracle` 需要 Python 3。
 - 演示账号：**用户名 `demo` · 密码 `oceanabove`**（首次启动自动播种示例数据）。
 - 也可以直接在登录页注册新账号，新账号的机票与会话是空的，便于验证数据隔离。
+- 应用数据落在 `data/app.db`（自动创建，已 gitignore）；删除该文件即可回到干净种子状态。
+- 会话 Cookie 用 HMAC 签名；生产部署请设置 `SESSION_SECRET`（未设置时自动生成到 `data/.session-secret`）。
 
 ### 其他命令
 
@@ -49,7 +51,7 @@ npm run typecheck # TypeScript 类型检查
 > 与真实经纬度无关（例如库内 London→Paris 为 8,550 km，真实仅 336 km）。
 > 因此首页画的是**按库内坐标如实绘制的网络图**，而不是贴了大陆板块的世界地图 —— 否则点位与距离会自相矛盾。
 
-报价单以**登机牌**形式呈现：FROM / TO 区块、虚线撕口、航段表（每段距离 + 中转城市）、中转与总距离、右下角沙色总价与条码；状态区分「待确认 / 已出票 / 已过期」。只有点击「确认出票」才会生成客票。
+报价单以**登机牌**形式呈现：FROM / TO 区块、虚线撕口、航段表（每段距离 + 中转城市）、中转与总距离、右下角沙色总价与条码；状态区分「待确认 / 已出票 / 已过期」。只有点击「确认出票」才会生成客票，而且这一步在服务端是**两道门**：先用渲染时的报价快照哈希换取一次性 nonce，再用该 nonce 出票（任一环节缺失或重放都会被拒绝）。
 
 界面语言为**暖色订票台**：暖褐近黑的底色（不是冷蓝）、铜色航线、米金金额、奶油色票根；地图上所有连线都是**弧线**（飞行轨迹），点枢纽会亮起流动的虚线弧；鼠标悬浮最近机票时地图会画出该航线，点击可钉住。首页右侧同时提供**传统「出发地 / 目的地」下拉选择**与自然语言输入，发送后不跳转页面，右侧整体让给会话。设计规范见 [.github/skills/ui-taste/](.github/skills/ui-taste/SKILL.md)。
 
@@ -70,7 +72,11 @@ lib/
   i18n/                      中英文案与语言上下文
   api/client.ts              前端调用的类型化 API 客户端
   db/locations.ts            只读读取 locations.db 并校验数据完整性
-  mock/                      fixtures / mock agent / 内存 store / 会话 Cookie
+  db/{schema,app}.ts         应用库 DDL 与连接单例（better-sqlite3）
+  domain/                    路线 / 计价 / 消歧 / 校验（唯一计算源）
+  store/                     持久化仓储 + 报价快照哈希 + 一次性 nonce 出票链
+  auth/                      scrypt 口令、HMAC 会话 Cookie、登录限流
+  agent/reply.ts             确定性回复编排（只调用域引擎，不产生数字）
 docs/PLAN.zh-CN.md           需求梳理与实现计划（归档）
 locations.db                 唯一数据源（只读）
 ```
@@ -100,13 +106,26 @@ locations.db                 唯一数据源（只读）
 生成 `lib/domain/__fixtures__/golden.json`：**1068 条路线（含全部 780 个枢纽对）** + 10 个无服务城市的最近替代。
 `npm run verify:data` 让两套实现逐条比对。
 
+## 出票守卫（为何对话里说「是」不会出票）
+
+| 步骤 | 接口 | 作用 |
+|---|---|---|
+| 1. 报价 | `POST /api/chat` | 生成报价并落库为**不可变快照**，返回 `snapshotHash` |
+| 2. 同意 | `POST /api/quotes/:id/consent` | 客户端回传它渲染过的 `snapshotHash`；一致才发一次性 nonce（TTL 2 分钟） |
+| 3. 出票 | `POST /api/quotes/:id/confirm` | 校验 nonce 属于本人 + 未使用 + 未过期 + 快照未变，然后写 `tickets` |
+
+没有第 2、3 步就没有任何路径能写入 `tickets`：重放 nonce 返回 `nonce_used`，报价过期返回 `expired`，
+换用户访问返回 `not_found`，快照被改返回 `snapshot_changed`。`lib/store/store.test.ts` 逐条锁住这些行为。
+所有请求的用户身份都来自**服务端会话表**，客户端传来的 user id 一律忽略。
+
 ## 安全与配置
 
 - `.env.local` 已被 `.gitignore` 忽略，**不会**进入版本库；仓库里只提交 `.env.example` 占位符。
-- 当前 mock 认证仅用于前端联调；真实实现将使用 scrypt 加盐哈希 + 服务端会话表（见计划文档 §9）。
+- 口令用 **scrypt + 每用户随机盐**（`scrypt$N$r$p$salt$hash`），校验用 `timingSafeEqual`。
+- 会话 Cookie 形如 `<sessionId>.<hmac>`，签名密钥来自 `SESSION_SECRET`（或自动生成到 `data/.session-secret`）；
+  服务端只认 `sessions` 表里存在且未过期的行，登出即删行。
+- 登录 / 注册有固定窗口限流（登录 8 次/分钟，注册 5 次/10 分钟）。
 
 ## 已知限制（本阶段）
 
-- 数据只存在内存中：重启 dev server 会重置为种子数据。
-- 对话回复由**确定性规则**生成（`lib/agent/reply.ts`）：它只编排域引擎调用，不编造数字，但还不能理解复杂表述；LLM 工具循环尚未接入。
-- 报价确认尚未绑定一次性 nonce（出票守卫在持久化阶段实现）。
+- 对话回复由**确定性规则**生成（`lib/agent/reply.ts`）：它只编排域引擎调用，不编造数字，但还不能理解复杂表述；LLM 工具循环与 SSE 流式输出尚未接入。

@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { loadNetwork } from "@/lib/db/locations";
-import { getSessionUsername } from "@/lib/mock/session";
 
 export async function GET() {
-  const username = await getSessionUsername();
-  if (!username) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   return NextResponse.json({ network: loadNetwork() });
 }

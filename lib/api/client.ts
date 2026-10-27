@@ -76,10 +76,19 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
-  confirmQuote: (quoteId: string, conversationId: string) =>
+  consentQuote: (quoteId: string, snapshotHash: string) =>
+    request<{ nonce: string; expiresAt: string; snapshotHash: string }>(
+      `/api/quotes/${quoteId}/consent`,
+      {
+        method: "POST",
+        body: JSON.stringify({ snapshotHash }),
+      },
+    ),
+
+  confirmQuote: (quoteId: string, nonce: string) =>
     request<{ quote: Quote; ticket: Ticket }>(`/api/quotes/${quoteId}/confirm`, {
       method: "POST",
-      body: JSON.stringify({ conversationId }),
+      body: JSON.stringify({ nonce }),
     }),
 
   listTickets: () => request<{ tickets: Ticket[] }>("/api/tickets"),

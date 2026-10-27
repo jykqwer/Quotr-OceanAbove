@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
 import { buildReply } from "@/lib/agent/reply";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getDb } from "@/lib/db/app";
 import { getGraph } from "@/lib/domain";
 import { verifyRoute } from "@/lib/domain/verify";
-import {
-  appendMessage,
-  createConversation,
-  createQuoteForRoute,
-  findUser,
-  getConversation,
-  listTickets,
-} from "@/lib/mock/store";
-import { getSessionUsername } from "@/lib/mock/session";
-import type { Lang, Message, ToolTrace } from "@/lib/types";
+import { appendMessage, createConversation, createQuote, getConversation, getQuote, listTickets } from "@/lib/store";
+import type { Lang, ToolTrace } from "@/lib/types";
 
 export async function POST(request: Request) {
-  const username = await getSessionUsername();
-  if (!username) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const body = (await request.json().catch(() => null)) as
     | { conversationId?: string; text?: string; lang?: Lang }
@@ -25,21 +19,18 @@ export async function POST(request: Request) {
   if (!text) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const lang: Lang = body?.lang === "zh" ? "zh" : "en";
+  const db = getDb();
   const conversation =
-    (body?.conversationId && getConversation(username, body.conversationId)) ||
-    createConversation(username, text.slice(0, 48));
+    (body?.conversationId && getConversation(db, user.id, body.conversationId)) ||
+    createConversation(db, user.id, text.slice(0, 48));
 
-  const userMessage: Message = appendMessage(conversation.id, {
-    conversationId: conversation.id,
-    role: "user",
-    content: text,
-  });
+  const userMessage = appendMessage(db, conversation.id, { role: "user", content: text });
 
   const tools: ToolTrace[] = [];
-  const graph = getGraph();
   const report = (name: string, ok: boolean, ms: number) => tools.push({ name, ok, ms });
 
-  const reply = buildReply(graph, text, lang, listTickets(username), report);
+  const graph = getGraph();
+  const reply = buildReply(graph, text, lang, listTickets(db, user.id), report);
 
   const route = reply.kind === "route" ? reply.route : null;
   if (route) {
@@ -48,27 +39,25 @@ export async function POST(request: Request) {
     report("verify_route", true, Math.round(performance.now() - started));
   }
 
-  const quote = route
-    ? (() => {
-        const started = performance.now();
-        const value = createQuoteForRoute(conversation.id, route);
-        report("create_booking_quote", true, Math.round(performance.now() - started));
-        return value;
-      })()
-    : undefined;
+  let quoteId: string | undefined;
+  if (route) {
+    const started = performance.now();
+    const quote = createQuote(db, { userId: user.id, conversationId: conversation.id, route });
+    quoteId = quote.id;
+    report("create_booking_quote", true, Math.round(performance.now() - started));
+  }
 
-  const assistantMessage: Message = appendMessage(conversation.id, {
-    conversationId: conversation.id,
+  const assistantMessage = appendMessage(db, conversation.id, {
     role: "assistant",
     content: reply.content,
-    quote,
+    quoteId,
     tools,
   });
 
   return NextResponse.json({
-    conversation: getConversation(username, conversation.id),
+    conversation: getConversation(db, user.id, conversation.id),
     userMessage,
-    assistantMessage,
-    passenger: findUser(username)?.displayName ?? username,
+    assistantMessage: { ...assistantMessage, quote: quoteId ? getQuote(db, quoteId) ?? undefined : undefined },
+    passenger: user.displayName,
   });
 }

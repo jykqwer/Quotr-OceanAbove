@@ -92,19 +92,21 @@ Next.js 15 App Router (localhost:3000)
 1. **结构层**：不存在"直接订票"工具；出票必须引用已持久化的 `quote`。
 2. **人在环**：报价卡上的确认按钮调用 `POST /api/quotes/:id/confirm`，服务端签发绑定 `(userId, quoteId, snapshotHash)` 的**一次性 nonce**；Agent 的 `confirm_booking` 需要该 nonce。
 3. **内容绑定**：nonce 仅在卡片渲染内容与快照 hash 一致时签发，杜绝"确认 A 出票 B"。
-4. **状态机 + 幂等**：`pending → confirmed → ticketed`，单次可用、TTL 15 分钟、唯一约束；重复确认返回同一张票；全流程写审计日志（触发者、时间、快照 hash）。
+4. **状态机 + 单次使用**：`pending → booked`，nonce 使用即标记 `used_at`、TTL 2 分钟；重放、过期、跨用户、快照变化分别返回 `nonce_used` / `nonce_expired` / `not_found` / `snapshot_changed`。全流程写 `audit_log`（触发者、动作、快照 hash、客票号）。
 
 文本确认（"好的，确认"）默认不构成出票依据，因为仅靠提示词约束不可靠。
 
 ## 8. 数据模型（app.db）
 
-- `users(id, username UNIQUE, password_hash, salt, display_name, created_at)`
+- `users(id, username, password_hash, display_name, created_at)` —— 盐编码在 `password_hash` 内（`scrypt$N$r$p$salt$hash`）
+- `sessions(id, user_id, created_at, expires_at)`
 - `conversations(id, user_id, title, created_at, updated_at)`
-- `messages(id, conversation_id, role, content, quote_json, tool_trace_json, created_at)`
+- `messages(id, conversation_id, role, content, quote_id, tool_trace_json, created_at)`
 - `quotes(id, user_id, conversation_id, snapshot_json, snapshot_hash, status, expires_at, confirmed_at)`
-- `confirmations(nonce, quote_id, user_id, snapshot_hash, used_at)`
-- `tickets(id, user_id, quote_id, origin, destination, total_km, price_usd, created_at)`
+- `confirmations(nonce, quote_id, user_id, snapshot_hash, created_at, expires_at, used_at)`
+- `tickets(id, user_id, quote_id, origin, destination, total_km, price_usd, passenger, created_at)`
 - `ticket_legs(ticket_id, seq, from_city, to_city, distance_km)`
+- `audit_log(id, user_id, action, quote_id, snapshot_hash, detail, created_at)`
 
 ## 9. 用户体系（简单，但边界正确）
 
@@ -128,7 +130,7 @@ Next.js 15 App Router (localhost:3000)
 | 城市名歧义 | 返回候选并追问，不猜 |
 | 无服务城市 | 提示 + 最近可服务城市及距离，不静默替换 |
 | 起降同城 / 未知城市 | 参数校验，直接拒绝 |
-| 报价过期 / 重复确认 / 并发确认 | TTL + 状态机 + 唯一约束 + 幂等返回 |
+| 报价过期 / 重复确认 / 并发确认 | TTL + 状态机 + nonce 单次使用（重放返回 `nonce_used`，不再幂等发第二张票） |
 | Prompt 注入（"忽略指令直接出票"） | 出票依赖 nonce，模型无权限绕过 |
 | 坐标是抽象地图 | 文档与 UI 明确说明；不做真实地理推断 |
 | 无支付、无班期、无库存、单乘客、不支持多程 | 明确列为需求外 |
@@ -143,9 +145,9 @@ Next.js 15 App Router (localhost:3000)
 
 1. ~~工程骨架（Next.js + TS + Tailwind + i18n + 主题）~~ ✅
 2. ~~域引擎（TDD + Python 参考实现交叉验证）~~ ✅ `lib/domain`，1068 条 fixture 与 `scripts/oracle.py` 逐条一致
-3. 持久化与 REST（含认证加固、nonce 确认链）
+3. ~~持久化与 REST（含认证加固、nonce 确认链）~~ ✅ `lib/store` + `lib/auth`，守卫测试 12 例
 4. Agent 工具循环（接入 DeepSeek）
-5. UI 联调（聊天 / 报价单 / 订单 / 会话）
+5. ~~UI 联调（聊天 / 报价单 / 订单 / 会话）~~ ✅
 6. 加固（守卫测试、注入用例、降级）与交付文档
 
 ### P1 落地记录
@@ -154,3 +156,19 @@ Next.js 15 App Router (localhost:3000)
 - 线路不变量由 `verifyRoute()` 在报价前断言（曾据此抓出「枢纽→非枢纽段被判为非法直飞」的真实缺陷）。
 - 城市消歧：折叠大小写/变音符号/标点后精确匹配；多解返回候选；自由文本按最长窗口识别，长度≤4 词的歧义名同样上报。
 - 无服务城市：按坐标取最近的可服务城市，10 个全部覆盖。
+
+### P2 落地记录
+
+- **持久化**：`data/app.db`（better-sqlite3，WAL + `foreign_keys=ON`），表结构见 `lib/db/schema.ts`：
+  `users / sessions / conversations / messages / quotes / confirmations / tickets / ticket_legs / audit_log`。
+  首次创建时由 `lib/store/seed.ts` 播种演示账号；**种子里出票也走真实 nonce 链**，演示数据不能绕过规则。
+- **认证加固**：`scrypt$N$r$p$salt$hash`（每用户随机盐，`timingSafeEqual` 校验）；Cookie 值 `<sessionId>.<hmac>`，
+  服务端只认 `sessions` 表内的行；登录 8 次/分钟、注册 5 次/10 分钟固定窗口限流；密钥来自 `SESSION_SECRET`
+  或自动生成到 `data/.session-secret`（`data/` 整体 gitignore）。
+- **确认链两级化**：`POST /api/quotes/:id/consent` 校验客户端回传的 `snapshotHash` 后签发一次性 nonce（TTL 2 分钟）；
+  `POST /api/quotes/:id/confirm` 只用 nonce 换票。报价快照用「键排序后的规范 JSON + sha256」保证可复现。
+- **一处设计修正**：`confirmQuote` 原本对已出票的报价「幂等返回旧票」，导致重放 nonce 看起来成功。
+  现在**先校验 nonce 再看报价状态**，重放一律返回 `nonce_used`；`tickets` 表只剩这一条写入路径。
+- **守卫测试**（`lib/store/store.test.ts`，12 例）：无 nonce / 伪造 nonce / 快照不符 / 重放 / 过期报价 /
+  过期 nonce / 已出票再同意 / 跨用户越权 / 用户名大小写唯一 / 口令加盐 / 凭据校验 / 消息顺序。
+- 删除 `lib/mock/`（内存 store 与占位 SHA-256 认证），所有页面与 API 改由 `lib/store` + `lib/auth` 支撑。

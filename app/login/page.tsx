@@ -1,15 +1,13 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth-form";
 import { LoginHero } from "@/components/login-hero";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { loadNetwork } from "@/lib/db/locations";
-import { SESSION_COOKIE } from "@/lib/mock/session";
-import { findUser } from "@/lib/mock/store";
+import { DEMO } from "@/lib/store/seed";
 
 export default async function LoginPage() {
-  const jar = await cookies();
-  const username = jar.get(SESSION_COOKIE)?.value;
-  if (username && findUser(username)) redirect("/");
+  const user = await getCurrentUser();
+  if (user) redirect("/");
 
   const { stats } = loadNetwork();
 
@@ -18,7 +16,7 @@ export default async function LoginPage() {
       <div className="grid w-full items-center gap-10 lg:grid-cols-[1.15fr_minmax(0,380px)] lg:gap-20">
         <LoginHero stats={stats} />
         <div className="flex justify-center lg:justify-end">
-          <AuthForm />
+          <AuthForm demo={DEMO} />
         </div>
       </div>
     </div>

@@ -23,6 +23,8 @@ export interface Quote {
   status: QuoteStatus;
   createdAt: string;
   expiresAt: string;
+  /** Hash of the immutable snapshot; the client echoes it back to consent. */
+  snapshotHash: string;
 }
 
 export interface Ticket {

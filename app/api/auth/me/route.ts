@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
-import { findUser } from "@/lib/mock/store";
-import { getSessionUsername } from "@/lib/mock/session";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function GET() {
-  const username = await getSessionUsername();
-  if (!username) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  const user = findUser(username);
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-  return NextResponse.json({
-    user: { username: user.username, displayName: user.displayName },
-  });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  return NextResponse.json({ user: { username: user.username, displayName: user.displayName } });
 }
