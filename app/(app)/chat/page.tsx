@@ -159,9 +159,6 @@ export default function ChatPage() {
           <h1 className="min-w-0 flex-1 truncate text-[12px] text-slate-200">
             {active?.title ?? t("chat.newChat")}
           </h1>
-          <span className="mono hidden text-[9px] uppercase tracking-[0.14em] text-slate-700 md:block">
-            {t("chat.previewBadge")}
-          </span>
           <Link href="/conversations" className="btn-quiet shrink-0 lg:hidden" title={t("chat.allConversations")}>
             <ListIcon className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{t("chat.allConversations")}</span>

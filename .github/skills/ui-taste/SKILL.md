@@ -85,14 +85,14 @@ Not allowed: gradient card fills, gradient text, glow on cards, `backdrop-blur`,
 - Operational, not promotional: "New booking", "Booking desk", "Fare quote", "Segment", "Confirm & book", "Valid 15 min".
 - No exclamation marks, no emoji, no "✨", no "Let's get you flying".
 - Errors state what happened and what to do next. Both languages, same key, same meaning.
+- **Never narrate the machine.** The screen carries the trip and the price. It does not carry build badges ("preview · sample data"), database names, `read-only`, the pricing formula, our modelling assumptions ("every flight is assumed available"), counts of cities we do not serve, or an explanation of why a control behaves as it does (the barcode accordion, the empty passenger field). Those go in README / PLAN. If a line only makes sense to the person who wrote the code, delete it.
 
 ## Honesty rules
 
-- Show the whole itinerary: every segment, every transfer city, total distance, total price, and the formula.
+- Show the whole itinerary: every segment, every transfer city, total distance, total price — and every leg's distance must add up to the total on screen, so the reader can check it without being told the formula.
 - States are labelled in words (`Pending` / `Issued` / `Expired`) plus a dot — never colour alone.
-- Sample data is labelled on screen.
 - Never display a number the domain engine did not produce.
-- The map is an abstract coordinate plane; say so.
+- The map is an abstract coordinate plane. That is a fact for the docs and for anyone reading the data model — not a footnote under the chart. Draw it honestly: hub-only transfers, curves, real database coordinates.
 
 ## Anti-patterns
 

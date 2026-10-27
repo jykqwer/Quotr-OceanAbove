@@ -116,8 +116,11 @@ export function TicketCard({
                   </p>
                 )}
               </div>
-              <span className="hidden sm:block">
+              <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                 <Barcode value={ticket.id} />
+                <span className="mono text-[9px] uppercase tracking-[0.14em] text-ink-600">
+                  {t("pass.scanHint")}
+                </span>
               </span>
             </div>
             <p className="mono mt-2 border-t border-ink-900/15 pt-2 text-[10px] uppercase tracking-[0.14em] text-ink-600">

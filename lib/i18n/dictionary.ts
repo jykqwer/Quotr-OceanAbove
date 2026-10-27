@@ -51,7 +51,6 @@ const en = {
   "chat.emptyTitle": "Where would you like to fly?",
   "chat.emptyHint":
     "Describe the trip in your own words. I'll find the cheapest route, show every leg and transfer, and only book after you confirm.",
-  "chat.previewBadge": "Preview build · sample data",
   "chat.you": "You",
   "chat.assistant": "Ocean Above",
   "chat.thinking": "Working on it…",
@@ -80,7 +79,6 @@ const en = {
   "quote.journeyN": "Journey {n}",
   "quote.totalDistance": "Distance",
   "quote.totalPrice": "Total",
-  "quote.priceNote": "Distance is the sum of all legs; price = distance × 0.13 USD.",
   "quote.confirm": "Confirm & book",
   "quote.confirming": "Booking…",
   "quote.confirmed": "Issued",
@@ -100,6 +98,7 @@ const en = {
   "pass.from": "From",
   "pass.to": "To",
   "pass.departure": "Departure",
+  "pass.scanHint": "Scan to verify",
 
   "tickets.title": "My tickets",
   "tickets.subtitle": "Every ticket you booked with Ocean Above.",
@@ -110,7 +109,6 @@ const en = {
   "tickets.headsNote": "{count} passengers",
   "tickets.expand": "Show ticket",
   "tickets.collapse": "Hide ticket",
-  "tickets.barcodeHint": "Only the open ticket shows its barcode, so a scanner cannot read the wrong one.",
   "tickets.totalSpend": "Total spend",
   "tickets.totalDistance": "Total distance",
   "tickets.bookedAt": "Booked {time}",
@@ -129,7 +127,6 @@ const en = {
   "conversations.open": "Open",
   "conversations.back": "All conversations",
   "conversations.notFound": "Conversation not found.",
-  "conversations.readOnly": "Read-only history",
 
   "common.loading": "Loading…",
   "common.retry": "Retry",
@@ -173,7 +170,6 @@ const en = {
   "home.noServiceGroup": "No service",
 
   "map.title": "Route network",
-  "map.badge": "Abstract coordinates",
   "map.hint": "Click any city to reveal its direct hubs.",
   "map.showingRoute": "Showing this route",
   "map.clear": "Clear",
@@ -187,7 +183,6 @@ const en = {
   "map.statCities": "Cities",
   "map.statHubs": "Hubs",
   "map.statLinks": "Hub routes",
-  "map.statNoService": "No service",
   "map.cityList": "City list",
   "map.hubList": "Hub list",
   "map.listHint": "Hover a city to see the hubs it flies to.",
@@ -196,8 +191,6 @@ const en = {
   "map.directHubs": "{count} direct hubs",
   "map.filterLabel": "Filter by initial",
   "map.routeOf": "Route of the open conversation",
-
-  "footer.note": "Price = distance × 0.13 USD · routes and fares computed from locations.db",
 } as const;
 
 export type DictKey = keyof typeof en;
@@ -253,7 +246,6 @@ const zh: Dictionary = {
   "chat.sending": "发送中…",
   "chat.emptyTitle": "想去哪里？",
   "chat.emptyHint": "用你自己的话描述行程。我会找出最便宜的路线，列出每一段与中转城市，并在你确认后才出票。",
-  "chat.previewBadge": "前端预览 · 示例数据",
   "chat.you": "你",
   "chat.assistant": "Ocean Above",
   "chat.thinking": "正在处理…",
@@ -282,7 +274,6 @@ const zh: Dictionary = {
   "quote.journeyN": "第 {n} 程",
   "quote.totalDistance": "距离",
   "quote.totalPrice": "合计",
-  "quote.priceNote": "总距离为各航段之和；价格 = 总距离 × 0.13 USD。",
   "quote.confirm": "确认出票",
   "quote.confirming": "出票中…",
   "quote.confirmed": "已出票",
@@ -302,6 +293,7 @@ const zh: Dictionary = {
   "pass.from": "出发",
   "pass.to": "到达",
   "pass.departure": "出发时间",
+  "pass.scanHint": "扫码核验客票",
 
   "tickets.title": "我的机票",
   "tickets.subtitle": "你在 Ocean Above 预订的全部机票。",
@@ -312,7 +304,6 @@ const zh: Dictionary = {
   "tickets.headsNote": "{count} 位乘客",
   "tickets.expand": "展开客票",
   "tickets.collapse": "收起客票",
-  "tickets.barcodeHint": "只有展开的客票会显示条码，扫码时不会误读到别的票。",
   "tickets.totalSpend": "总消费",
   "tickets.totalDistance": "总里程",
   "tickets.bookedAt": "出票时间 {time}",
@@ -331,7 +322,6 @@ const zh: Dictionary = {
   "conversations.open": "查看",
   "conversations.back": "全部会话",
   "conversations.notFound": "会话不存在。",
-  "conversations.readOnly": "只读历史记录",
 
   "common.loading": "加载中…",
   "common.retry": "重试",
@@ -374,7 +364,6 @@ const zh: Dictionary = {
   "home.noServiceGroup": "暂未通航",
 
   "map.title": "航线网络",
-  "map.badge": "抽象坐标",
   "map.hint": "点击任意城市，查看它能直飞的枢纽。",
   "map.showingRoute": "正在显示该航线",
   "map.clear": "清除",
@@ -388,7 +377,6 @@ const zh: Dictionary = {
   "map.statCities": "城市",
   "map.statHubs": "枢纽",
   "map.statLinks": "枢纽航线",
-  "map.statNoService": "无服务",
   "map.cityList": "城市名单",
   "map.hubList": "枢纽名单",
   "map.listHint": "悬浮城市可查看它能直飞的枢纽。",
@@ -397,8 +385,6 @@ const zh: Dictionary = {
   "map.directHubs": "{count} 个直飞枢纽",
   "map.filterLabel": "按首字母筛选",
   "map.routeOf": "当前会话的航线",
-
-  "footer.note": "价格 = 距离 × 0.13 USD · 路线与票价均由 locations.db 计算",
 };
 
 export const dictionaries: Record<Lang, Dictionary> = { en, zh };

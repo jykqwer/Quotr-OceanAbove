@@ -96,13 +96,6 @@ export function AppShell({
       </header>
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6 sm:py-6">{children}</main>
-
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 py-3 text-[9.5px] uppercase tracking-[0.14em] text-slate-600 sm:px-6">
-          <span>{t("footer.note")}</span>
-          <span className="mono">locations.db · read-only</span>
-        </div>
-      </footer>
     </div>
   );
 }

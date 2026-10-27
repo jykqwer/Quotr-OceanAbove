@@ -11,7 +11,6 @@ export function LoginHero({ stats }: { stats: Network["stats"] }) {
     { code: "CITIES", value: stats.cities, note: t("map.statCities") },
     { code: "HUBS", value: stats.hubs, note: t("map.statHubs") },
     { code: "HUB ROUTES", value: stats.links, note: t("map.statLinks") },
-    { code: "NO SERVICE", value: stats.citiesWithoutService, note: t("map.statNoService") },
   ];
 
   return (

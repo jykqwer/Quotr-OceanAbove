@@ -75,7 +75,6 @@ export default function TicketsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-[10.5px] leading-relaxed text-slate-600">{t("tickets.barcodeHint")}</p>
           {tickets.map((ticket) => (
             <TicketCard
               key={ticket.id}

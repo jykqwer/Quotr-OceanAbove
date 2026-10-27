@@ -449,7 +449,7 @@ export function NetworkMap({
 
           {selectedCity && (
             <g fill="none" pointerEvents="none" transform={`translate(${toSvg(selectedCity.x, selectedCity.y).join(" ")})`}>
-              <circle r={420} className="animate-ripple stroke-sunset-300" strokeWidth={34} />
+              <circle r={560} className="animate-ripple stroke-sunset-300" strokeWidth={34} />
               <path d={STAR_PATH} className="animate-star fill-sunset-300" fillOpacity={0.6} />
             </g>
           )}

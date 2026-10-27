@@ -121,7 +121,7 @@ A pass may hold several city pairs and several travellers. Never drop the groupi
 ```
 
 - Notches use the **page** colour so they read as punched through.
-- `Barcode` is deterministic from the document id — it encodes that id and nothing else; bars are `bg-ink-700/80` on paper.
+- `Barcode` is deterministic from the document id — it encodes that id and nothing else; bars are `bg-ink-700/80` on paper. On an issued ticket it carries the caption `Scan to verify` / `扫码核验客票`; a barcode with no caption is decoration the reader has to guess at.
 - `IssuedStamp` is centred on the tear line, `animate-stamp`, coral double border, semi-transparent cream fill. It must not overlap the amount or the barcode.
 
 ## Transcript message
@@ -249,7 +249,11 @@ the perforation and the cream stub.
 
 The reason is physical: a scanner must never read the wrong barcode. So the stub (and therefore `Barcode`) is
 **not rendered at all** when collapsed — not hidden with CSS. Toggle is a 24px square with `−` / `+` in mono,
-`aria-expanded` + `aria-controls`, and the state line `Only the open ticket shows its barcode…` sits above the list.
+`aria-expanded` + `aria-controls`.
+
+**Send the caption to the barcode, not a lecture above the list.** The open stub carries
+`Scan to verify` / `扫码核验客票` (mono 9px, ink-600) directly under the bars; an explanation of *why* the
+accordion exists belongs in these docs, never on the screen.
 
 ## Do / Don't
 

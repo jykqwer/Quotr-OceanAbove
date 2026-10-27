@@ -52,7 +52,7 @@ export default function ConversationDetailPage() {
       <section className="border border-white/10 bg-abyss-900">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="col-head shrink-0">{t("conversations.readOnly")}</span>
+            <span className="col-head shrink-0">{t("conversations.title")}</span>
             <span className="h-3 w-px bg-white/10" aria-hidden="true" />
             <h1 className="min-w-0 truncate text-[12px] text-slate-200">
               {conversation?.title ?? t("conversations.title")}

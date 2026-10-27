@@ -179,8 +179,6 @@ export function QuoteCard({
             <span className="text-[11px] text-ink-600">{t("quote.expired")}</span>
           )}
         </div>
-
-        <p className="mt-1.5 text-[10px] leading-relaxed text-ink-600">{t("quote.priceNote")}</p>
       </div>
 
       {error && (

@@ -94,11 +94,11 @@ const config: Config = {
         star: {
           "0%": { opacity: "0.85", transform: "scale(0.24) rotate(0deg)" },
           "55%": { opacity: "0.4" },
-          "100%": { opacity: "0", transform: "scale(2.4) rotate(45deg)" },
+          "100%": { opacity: "0", transform: "scale(1) rotate(45deg)" },
         },
         ripple: {
-          "0%": { opacity: "0.45", transform: "scale(0.3)" },
-          "100%": { opacity: "0", transform: "scale(1.9)" },
+          "0%": { opacity: "0.45", transform: "scale(0.35)" },
+          "100%": { opacity: "0", transform: "scale(1)" },
         },
         stamp: {
           "0%": { opacity: "0", transform: "rotate(-8deg) scale(1.5)" },
