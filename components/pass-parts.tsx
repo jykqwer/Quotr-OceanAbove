@@ -44,7 +44,7 @@ export function Barcode({ value }: { value: string }) {
 export function IssuedStamp({ label }: { label: string }) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
-      <span className="display block animate-stamp whitespace-nowrap border-2 border-sunset-600/55 bg-cream-100/70 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-sunset-600/80">
+      <span className="display block animate-stamp whitespace-nowrap border-2 border-sunset-600/55 bg-cream-100/70 px-2.5 py-0.5 text-[12px] font-semibold uppercase tracking-[0.3em] text-sunset-600/80">
         {label}
       </span>
     </div>

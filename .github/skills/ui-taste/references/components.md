@@ -8,7 +8,7 @@ As implemented. Copy these strings; do not invent parallel ones.
 <section className="rounded-lg border border-white/10 bg-abyss-900">
   <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
     <span className="col-head">{title}</span>
-    <span className="mono text-[9.5px] uppercase tracking-[0.14em] text-slate-700">{meta}</span>
+    <span className="mono text-[10.5px] uppercase tracking-[0.14em] text-slate-700">{meta}</span>
   </div>
   <div className="px-4 py-3.5">{children}</div>
 </section>
@@ -28,8 +28,8 @@ As implemented. Copy these strings; do not invent parallel ones.
   </thead>
   <tbody>
     <tr className="border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
-      <td className="px-4 py-2.5 text-[12.5px] text-slate-200">…</td>
-      <td className="mono px-4 py-2.5 text-right text-[12px] text-sand">$879.15</td>
+      <td className="px-4 py-2.5 text-[13.5px] text-slate-200">…</td>
+      <td className="mono px-4 py-2.5 text-right text-[13px] text-sand">$879.15</td>
     </tr>
   </tbody>
 </table>
@@ -43,10 +43,10 @@ Hide secondary columns with `hidden sm:table-cell`, never by shrinking type.
 ```tsx
 <button className="flex w-full flex-col gap-1 border-l-2 border-transparent px-3 py-2.5 text-left hover:bg-white/[0.03] aria-[current=true]:border-ocean-400">
   <span className="flex items-baseline justify-between gap-2">
-    <span className="truncate text-[12px] text-slate-300">{title}</span>
-    <span className="mono shrink-0 text-[9.5px] text-slate-600">{time}</span>
+    <span className="truncate text-[13px] text-slate-300">{title}</span>
+    <span className="mono shrink-0 text-[10.5px] text-slate-600">{time}</span>
   </span>
-  <span className="truncate text-[10.5px] text-slate-600">{preview}</span>
+  <span className="truncate text-[11.5px] text-slate-600">{preview}</span>
 </button>
 ```
 
@@ -84,10 +84,10 @@ Order is contractual; it satisfies "confirm before booking":
       <span className="hidden sm:block"><Barcode value={quote.id} /></span>
     </div>
     <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-900/15 pt-2.5">
-      <span className="text-[10px] uppercase tracking-[0.14em] text-ink-600">Valid 15 min</span>
+      <span className="text-[11px] uppercase tracking-[0.14em] text-ink-600">Valid 15 min</span>
       <button className="btn-primary">Confirm & book</button>
     </div>
-    <p className="mt-1.5 text-[10px] leading-relaxed text-ink-600">{formula}</p>
+    <p className="mt-1.5 text-[11px] leading-relaxed text-ink-600">{formula}</p>
   </div>
 </article>
 ```
@@ -129,8 +129,8 @@ A pass may hold several city pairs and several travellers. Never drop the groupi
 ```tsx
 <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-4">
   <div className="flex items-center gap-2 sm:block sm:w-12 sm:shrink-0 sm:text-right">
-    <p className="text-[9.5px] uppercase tracking-[0.16em] text-sunset-300">OA</p>
-    <p className="mono text-[9.5px] text-slate-700">{time}</p>
+    <p className="text-[10.5px] uppercase tracking-[0.16em] text-sunset-300">OA</p>
+    <p className="mono text-[10.5px] text-slate-700">{time}</p>
   </div>
   <div className="min-w-0 flex-1 border-l border-sunset-500/45 pl-3">…</div>
 </div>
@@ -159,7 +159,7 @@ is our internal model, not something the passenger asked to read.
 
 **The composer's blurb belongs to the composer.** The line explaining the quote-then-ticket promise sits
 directly above the input, under the "or ask in your own words" divider — not under the headline. Keep it short
-enough to fit one line in the panel (`text-[12px]`, no `max-w-*`, **never `text-balance`**: balancing CJK copy
+enough to fit one line in the panel (`text-[13px]`, no `max-w-*`, **never `text-balance`**: balancing CJK copy
 splits it mid-word, e.g. 航 / 程).
 
 **Multi-city and passengers stay secondary.** Under the city pair sit a `Passengers` text field (11.5px `.field`,
@@ -187,7 +187,7 @@ or a debug gutter — this product speaks in sentences, not in function names.
 
 ```tsx
 <form className="flex items-stretch border border-white/15 bg-abyss-950 focus-within:border-ocean-400">
-  <textarea className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[13px] leading-relaxed outline-none placeholder:text-slate-600" />
+  <textarea className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[14px] leading-relaxed outline-none placeholder:text-slate-600" />
   <button className="flex w-12 shrink-0 items-center justify-center border-l border-white/10 bg-sunset-500 text-abyss-950 disabled:bg-transparent disabled:text-slate-600" />
 </form>
 ```
@@ -205,7 +205,7 @@ home panel's thread mode. Keep `aria-label` unconditionally set — an empty inp
 <dl className="grid grid-cols-3 divide-x divide-white/10 overflow-hidden rounded-lg border border-white/10 bg-abyss-900">
   <div className="px-4 py-3">
     <dt className="col-head">Total spend</dt>
-    <dd className="mono mt-1.5 text-[16px] text-sand">$2,039.86</dd>
+    <dd className="mono mt-1.5 text-[17px] text-sand">$2,039.86</dd>
   </div>
 </dl>
 ```
@@ -215,7 +215,7 @@ home panel's thread mode. Keep `aria-label` unconditionally set — an empty inp
 ```tsx
 <div className="rounded-lg border border-white/10 bg-abyss-900 px-6 py-16 text-center">
   <p className="col-head">{title}</p>
-  <p className="mx-auto mt-2 max-w-sm text-[12px] text-slate-500">{hint}</p>
+  <p className="mx-auto mt-2 max-w-sm text-[13px] text-slate-500">{hint}</p>
   <Link className="btn-primary mt-5">…</Link>
 </div>
 ```

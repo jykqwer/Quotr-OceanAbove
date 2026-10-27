@@ -245,13 +245,16 @@ export default function HomePage() {
                   <th scope="col" className="col-head px-4 py-1.5 text-left">
                     {t("home.colRoute")}
                   </th>
-                  <th scope="col" className="col-head hidden w-[108px] px-2 py-1.5 text-left sm:table-cell">
-                    {t("home.colTime")}
+                  <th scope="col" className="col-head hidden w-[118px] px-2 py-1.5 text-left lg:table-cell">
+                    {t("home.colBooked")}
                   </th>
-                  <th scope="col" className="col-head hidden w-[92px] px-2 py-1.5 text-right md:table-cell">
+                  <th scope="col" className="col-head w-[112px] px-1.5 py-1.5 text-left">
+                    {t("home.colDepart")}
+                  </th>
+                  <th scope="col" className="col-head hidden w-[96px] px-2 py-1.5 text-right md:table-cell">
                     {t("quote.totalDistance")}
                   </th>
-                  <th scope="col" className="col-head w-[88px] px-4 py-1.5 text-right">
+                  <th scope="col" className="col-head w-[88px] px-3 py-1.5 text-right">
                     {t("quote.totalPrice")}
                   </th>
                 </tr>
@@ -279,7 +282,7 @@ export default function HomePage() {
                     }}
                   >
                     <td className="px-4 py-2">
-                      <span className="flex items-center gap-1.5 text-[12px] text-slate-200">
+                      <span className="flex items-center gap-1.5 text-[13px] text-slate-200">
                         <span className="truncate">{ticket.origin}</span>
                         <span aria-hidden="true" className="text-sunset-500">
                           →
@@ -287,13 +290,16 @@ export default function HomePage() {
                         <span className="truncate">{ticket.destination}</span>
                       </span>
                     </td>
-                    <td className="mono hidden px-2 py-2 text-[11px] text-slate-500 sm:table-cell">
+                    <td className="mono hidden whitespace-nowrap px-2 py-2 text-[12px] text-slate-600 lg:table-cell">
                       {formatDateTime(ticket.bookedAt, lang)}
                     </td>
-                    <td className="mono hidden px-2 py-2 text-right text-[11px] text-slate-500 md:table-cell">
+                    <td className="mono whitespace-nowrap px-1.5 py-2 text-[12px] text-slate-400">
+                      {ticket.departAt ? formatDateTime(ticket.departAt, lang) : "—"}
+                    </td>
+                    <td className="mono hidden whitespace-nowrap px-2 py-2 text-right text-[12px] text-slate-500 md:table-cell">
                       {formatKm(ticket.totalDistanceKm)}
                     </td>
-                    <td className="mono px-4 py-2 text-right text-[12px] text-sand">
+                    <td className="mono whitespace-nowrap px-3 py-2 text-right text-[13px] text-sand">
                       {formatUsd(ticket.totalPriceUsd)}
                     </td>
                   </tr>
@@ -301,7 +307,7 @@ export default function HomePage() {
               </tbody>
             </table>
           ) : (
-            <p className="px-4 py-4 text-[11.5px] text-slate-600">{t("home.noTickets")}</p>
+            <p className="px-4 py-4 text-[12.5px] text-slate-600">{t("home.noTickets")}</p>
           )}
         </section>
       </div>
@@ -310,7 +316,7 @@ export default function HomePage() {
         {inThread ? (
           <>
             <div className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
-              <span className="mono min-w-0 flex-1 truncate text-[9.5px] uppercase tracking-[0.14em] text-slate-600">
+              <span className="mono min-w-0 flex-1 truncate text-[10.5px] uppercase tracking-[0.14em] text-slate-600">
                 {activeConversation?.title ?? ""}
               </span>
               <button type="button" onClick={resetThread} className="btn-quiet shrink-0 text-sunset-300/80">
@@ -326,18 +332,18 @@ export default function HomePage() {
                 {sending && (
                   <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-4">
                     <div className="flex items-center gap-2 sm:block sm:w-12 sm:shrink-0 sm:pt-0.5 sm:text-right">
-                      <p className="text-[9.5px] font-medium uppercase tracking-[0.16em] text-sunset-300">OA</p>
+                      <p className="text-[10.5px] font-medium uppercase tracking-[0.16em] text-sunset-300">OA</p>
                     </div>
                     <div className="min-w-0 flex-1 border-l border-sunset-500/45 pl-3">
                       {live && live.text.length > 0 ? (
-                        <p className="whitespace-pre-line break-words text-[13px] leading-relaxed text-slate-200">
+                        <p className="whitespace-pre-line break-words text-[14px] leading-relaxed text-slate-200">
                           {live.text}
                           <span aria-hidden="true" className="ml-0.5 animate-blink text-sunset-400">
                             ▍
                           </span>
                         </p>
                       ) : (
-                        <p className="mono text-[10px] uppercase tracking-[0.16em] text-slate-600 animate-blink">
+                        <p className="mono text-[11px] uppercase tracking-[0.16em] text-slate-600 animate-blink">
                           {t("chat.thinking")}
                         </p>
                       )}
@@ -347,7 +353,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="border-t border-white/10 p-3">
-              {error && <p className="mb-2 text-[11px] text-rose-300">{error}</p>}
+              {error && <p className="mb-2 text-[12px] text-rose-300">{error}</p>}
               <ChatComposer onSend={send} disabled={sending} showPlaceholder={false} />
             </div>
           </>
@@ -377,7 +383,7 @@ export default function HomePage() {
                     }}
                     title={t("home.swap")}
                     aria-label={t("home.swap")}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-[13px] text-slate-400 transition hover:border-sunset-400/50 hover:text-sunset-300"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-[14px] text-slate-400 transition hover:border-sunset-400/50 hover:text-sunset-300"
                   >
                     ⇄
                   </button>
@@ -397,7 +403,7 @@ export default function HomePage() {
                 return (
                   <div key={`leg-${index}`} className="border-l-2 border-sunset-500/30 pl-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="mono min-w-0 truncate text-[9px] uppercase tracking-[0.14em] text-sunset-300/70">
+                      <span className="mono min-w-0 truncate text-[10px] uppercase tracking-[0.14em] text-sunset-300/70">
                         {t("home.legN", { n: index + 2 })}
                         <span className="ml-1.5 normal-case tracking-normal text-slate-500">
                           {t("home.legFrom", { city: from || "—" })}
@@ -406,7 +412,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => setExtraLegs((current) => current.filter((_, i) => i !== index))}
-                        className="shrink-0 text-[10px] text-slate-600 transition-colors hover:text-rose-300"
+                        className="shrink-0 text-[11px] text-slate-600 transition-colors hover:text-rose-300"
                       >
                         {t("home.removeLeg")}
                       </button>
@@ -482,17 +488,17 @@ export default function HomePage() {
 
             <div className="my-4 flex items-center gap-3">
               <span className="h-px flex-1 bg-white/10" />
-              <span className="text-[9.5px] uppercase tracking-[0.14em] text-slate-600">
+              <span className="text-[10.5px] uppercase tracking-[0.14em] text-slate-600">
                 {t("home.orAsk")}
               </span>
               <span className="h-px flex-1 bg-white/10" />
             </div>
 
-            <p className="text-[12px] leading-relaxed text-slate-500">{t("home.subline")}</p>
+            <p className="text-[13px] leading-relaxed text-slate-500">{t("home.subline")}</p>
             <div className="mt-2">
               <ChatComposer onSend={send} disabled={sending} />
             </div>
-            {error && <p className="mt-2 text-[11px] text-rose-300">{error}</p>}
+            {error && <p className="mt-2 text-[12px] text-rose-300">{error}</p>}
 
             <p className="col-head mt-5">{t("home.quickPrompts")}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -502,7 +508,7 @@ export default function HomePage() {
                   type="button"
                   disabled={sending}
                   onClick={() => void send(suggestion)}
-                  className="rounded border border-white/10 px-2 py-1 text-left text-[11px] text-slate-300 transition-colors hover:border-sunset-400/40 hover:bg-sunset-500/10 hover:text-sunset-200 disabled:opacity-40"
+                  className="rounded border border-white/10 px-2 py-1 text-left text-[12px] text-slate-300 transition-colors hover:border-sunset-400/40 hover:bg-sunset-500/10 hover:text-sunset-200 disabled:opacity-40"
                 >
                   {suggestion}
                 </button>
@@ -520,8 +526,8 @@ export default function HomePage() {
                   className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03]"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] text-slate-200">{latest.title}</p>
-                    <p className="mono mt-1 text-[10px] text-slate-600">
+                    <p className="truncate text-[13.5px] text-slate-200">{latest.title}</p>
+                    <p className="mono mt-1 text-[11px] text-slate-600">
                       {formatDateTime(latest.updatedAt, lang)} ·{" "}
                       {t("conversations.messages", { count: latest.messageCount })}
                     </p>

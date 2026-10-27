@@ -54,12 +54,12 @@ export default function ConversationDetailPage() {
           <div className="flex min-w-0 items-center gap-2">
             <span className="col-head shrink-0">{t("conversations.title")}</span>
             <span className="h-3 w-px bg-white/10" aria-hidden="true" />
-            <h1 className="min-w-0 truncate text-[12px] text-slate-200">
+            <h1 className="min-w-0 truncate text-[13px] text-slate-200">
               {conversation?.title ?? t("conversations.title")}
             </h1>
           </div>
           {conversation && (
-            <span className="mono text-[10px] text-slate-600">
+            <span className="mono text-[11px] text-slate-600">
               {formatDateTime(conversation.updatedAt, lang)}
             </span>
           )}
@@ -67,9 +67,9 @@ export default function ConversationDetailPage() {
 
         <div className="px-4 py-4 sm:px-5">
           {loading ? (
-            <p className="py-12 text-center text-[11px] text-slate-600">{t("common.loading")}</p>
+            <p className="py-12 text-center text-[12px] text-slate-600">{t("common.loading")}</p>
           ) : error ? (
-            <p className="py-12 text-center text-[11px] text-rose-300">{error}</p>
+            <p className="py-12 text-center text-[12px] text-rose-300">{error}</p>
           ) : (
             <div className="flex flex-col gap-5">
               {messages.map((message) => (

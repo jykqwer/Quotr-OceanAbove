@@ -43,10 +43,10 @@ export function AppShell({
           <Link href="/" className="flex shrink-0 items-center gap-2.5">
             <WaveMark className="h-7 w-7" />
             <span className="hidden flex-col leading-none sm:flex">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+              <span className="text-[13px] font-semibold uppercase tracking-[0.22em] text-slate-100">
                 {t("brand.name")}
               </span>
-              <span className="mt-1 text-[8.5px] uppercase tracking-[0.24em] text-slate-600">
+              <span className="mt-1 text-[9.5px] uppercase tracking-[0.24em] text-slate-600">
                 {t("brand.tagline")}
               </span>
             </span>
@@ -60,7 +60,7 @@ export function AppShell({
                   key={href}
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-2.5 text-[11px] uppercase tracking-[0.14em] transition-colors sm:px-3.5 ${
+                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-2.5 text-[12px] uppercase tracking-[0.14em] transition-colors sm:px-3.5 ${
                     active
                       ? "border-sunset-500 text-slate-50"
                       : "border-transparent text-slate-500 hover:text-slate-200"
@@ -77,10 +77,10 @@ export function AppShell({
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <LangSwitch />
             <span className="hidden items-center gap-2 border-l border-white/10 pl-3 lg:flex">
-              <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-600">
+              <span className="text-[10.5px] uppercase tracking-[0.16em] text-slate-600">
                 {t("nav.signedIn")}
               </span>
-              <span className="mono text-[11px] text-slate-300">{user.displayName}</span>
+              <span className="mono text-[12px] text-slate-300">{user.displayName}</span>
             </span>
             <button
               type="button"

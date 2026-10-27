@@ -54,7 +54,7 @@ export function ChatComposer({
         }}
         placeholder={showPlaceholder ? t("chat.placeholder") : undefined}
         aria-label={t("chat.placeholder")}
-        className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[13px] leading-relaxed text-slate-100 outline-none placeholder:text-slate-600 disabled:opacity-60"
+        className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[14px] leading-relaxed text-slate-100 outline-none placeholder:text-slate-600 disabled:opacity-60"
       />
       <button
         type="submit"

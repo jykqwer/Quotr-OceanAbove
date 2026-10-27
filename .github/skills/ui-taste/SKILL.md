@@ -60,8 +60,9 @@ Balance rule: **warm ground, one ember action.** If the page reads cold at arm's
 
 ## Typography
 
-- Micro-label (`col-head`): 9.5–10px, uppercase, `tracking-[0.18em]`, `text-slate-500/600`.
-- Body: 12–13px, `leading-relaxed`, `text-slate-300`.
+- Micro-label (`col-head`): 11px, uppercase, `tracking-[0.18em]`, `text-slate-500/600`. **Never go below 10px** — a 9px monospace label was unreadable on a laptop and had to be raised a full step; do not introduce 9px again.
+- Body: 13–14px, `leading-relaxed`, `text-slate-300`.
+- Table cells that hold a number, date or price are `whitespace-nowrap`: a wrapped `11,229.09` / `km` reads as two different facts.
 - **City names on a pass use `display` (serif) at 23px** — the single editorial voice in an otherwise monospaced document. Never uppercase, never translated.
 - **Every number, code, time, distance and id uses `mono`.**
 - Amounts are never grey: gold on dark, coral ink on paper.

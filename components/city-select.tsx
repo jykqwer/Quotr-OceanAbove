@@ -58,7 +58,7 @@ export function CitySelect({
         </select>
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] text-slate-500"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-500"
         >
           ▾
         </span>

@@ -120,7 +120,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
           </div>
 
           {error && (
-            <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[11px] text-rose-300">
+            <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[12px] text-rose-300">
               {error}
             </p>
           )}
@@ -144,16 +144,16 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               setMode(mode === "signin" ? "signup" : "signin");
               setError(null);
             }}
-            className="text-[11px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
+            className="text-[12px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
           >
             {mode === "signin" ? t("auth.switchToSignUp") : t("auth.switchToSignIn")}
           </button>
-          <span className="mono text-[9.5px] uppercase tracking-[0.14em] text-slate-700">
+          <span className="mono text-[10.5px] uppercase tracking-[0.14em] text-slate-700">
             {t("auth.demoTitle")}
           </span>
         </div>
 
-        <p className="mono border-t border-white/10 px-4 py-2 text-[10.5px] text-slate-500">
+        <p className="mono border-t border-white/10 px-4 py-2 text-[11.5px] text-slate-500">
           {demo.username} · {demo.password}
         </p>
       </div>

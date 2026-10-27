@@ -240,7 +240,7 @@ export function NetworkMap({
           <span className="col-head">{t("map.title")}</span>
         </div>
         <div className="grid flex-1 place-items-center">
-          <span className="text-[11px] text-slate-600">{t("common.loading")}</span>
+          <span className="text-[12px] text-slate-600">{t("common.loading")}</span>
         </div>
       </section>
     );
@@ -260,7 +260,7 @@ export function NetworkMap({
         {/* Moving from the count into the list crosses a gap where neither is
             hovered, so closing is deferred and cancelled on re-entry. */}
         <div className="relative flex items-center">
-        <span className="mono flex items-center gap-2 text-[10px] text-slate-500">
+        <span className="mono flex items-center gap-2 text-[11px] text-slate-500">
           <span className="flex items-center gap-1">
             <span className="text-slate-300">{network.stats.cities}</span>
             <button
@@ -304,7 +304,7 @@ export function NetworkMap({
               <span className="col-head">
                 {listOpen === "hubs" ? t("map.hubList") : t("map.cityList")}
               </span>
-              <span className="mono text-[9.5px] text-slate-600">{visibleNames.length}</span>
+              <span className="mono text-[10.5px] text-slate-600">{visibleNames.length}</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-1 border-b border-white/10 px-2 py-1.5">
@@ -313,7 +313,7 @@ export function NetworkMap({
                 type="button"
                 onClick={() => setBucket("all")}
                 aria-pressed={bucket === "all"}
-                className={`mono rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition-colors ${
+                className={`mono rounded px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.08em] transition-colors ${
                   bucket === "all" ? "bg-ocean-400 text-abyss-950" : "text-slate-500 hover:text-slate-200"
                 }`}
               >
@@ -325,7 +325,7 @@ export function NetworkMap({
                   type="button"
                   onClick={() => setBucket(entry.key)}
                   aria-pressed={bucket === entry.key}
-                  className={`mono rounded px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.08em] transition-colors ${
+                  className={`mono rounded px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.08em] transition-colors ${
                     bucket === entry.key
                       ? "bg-ocean-400 text-abyss-950"
                       : "text-slate-500 hover:text-slate-200"
@@ -338,9 +338,9 @@ export function NetworkMap({
 
             <div className="scroll-slim max-h-[220px] overflow-y-auto px-2 py-1.5">
               {visibleNames.length === 0 ? (
-                <p className="py-2 text-center text-[10.5px] text-slate-600">{t("map.listEmpty")}</p>
+                <p className="py-2 text-center text-[11.5px] text-slate-600">{t("map.listEmpty")}</p>
               ) : (
-                <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10.5px]">
+                <ul className="mono grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11.5px]">
                   {visibleNames.map((name) => {
                     const isActive = activeCity === name;
                     const isHub = index.byName.get(name)?.isHub ?? false;
@@ -635,8 +635,8 @@ export function NetworkMap({
                 : { left: `${focusPoint.left}%`, top: `${focusPoint.top}%` }
             }
           >
-            <p className="text-[11.5px] text-slate-100">{focusCity.name}</p>
-            <p className="mono text-[9.5px] text-slate-500">
+            <p className="text-[12.5px] text-slate-100">{focusCity.name}</p>
+            <p className="mono text-[10.5px] text-slate-500">
               {focusCity.isHub
                 ? `${t("map.hubRoutes", { count: index.degree.get(focusCity.name) ?? 0 })} · ${t("map.directCities", { count: index.clients.get(focusCity.name)?.length ?? 0 })}`
                 : `${t("map.directHubs", { count: focusCity.hubs.length })} · ${focusCity.hubs.join(" · ")}`}
@@ -646,20 +646,20 @@ export function NetworkMap({
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/10 px-4 py-2">
-        <span className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.14em] text-slate-500">
+        <span className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.14em] text-slate-500">
           <span aria-hidden="true" className="h-1.5 w-1.5 bg-lamp-300" />
           {t("map.legendHub")}
         </span>
-        <span className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.14em] text-slate-500">
+        <span className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.14em] text-slate-500">
           <span aria-hidden="true" className="h-1 w-1 rounded-full bg-lamp-400/70" />
           {t("map.legendCity")}
         </span>
-        <span className="flex items-center gap-1.5 text-[9.5px] uppercase tracking-[0.14em] text-slate-500">
+        <span className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-[0.14em] text-slate-500">
           <span aria-hidden="true" className="h-px w-4 bg-ocean-400/70" />
           {t("map.legendLink")}
         </span>
 
-        <span className="ml-auto flex items-center gap-2 text-[10.5px] text-slate-500">
+        <span className="ml-auto flex items-center gap-2 text-[11.5px] text-slate-500">
           {selectedCity ? (
             <>
               <span className="text-slate-200">{selectedCity.name}</span>
@@ -669,14 +669,12 @@ export function NetworkMap({
                   setSelected(null);
                   setRouteYieldedFor(null);
                 }}
-                className="rounded border border-white/15 px-1.5 py-0.5 text-[9.5px] uppercase tracking-[0.12em] text-slate-400 hover:bg-white/[0.05]"
+                className="rounded border border-white/15 px-1.5 py-0.5 text-[10.5px] uppercase tracking-[0.12em] text-slate-400 hover:bg-white/[0.05]"
               >
                 {t("map.clear")}
               </button>
             </>
-          ) : highlightPoints.length > 1 ? (
-            <span className="text-sand">{t("map.showingRoute")}</span>
-          ) : (
+          ) : routeActive ? null : (
             t("map.hint")
           )}
         </span>

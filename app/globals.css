@@ -38,7 +38,7 @@
   }
 
   .label {
-    @apply text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500;
+    @apply text-[12px] font-medium uppercase tracking-[0.18em] text-slate-500;
   }
 
   .mono {
@@ -51,7 +51,7 @@
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[12px] font-medium uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[14px] font-medium uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-primary {
@@ -63,23 +63,23 @@
   }
 
   .btn-quiet {
-    @apply inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-sunset-300;
+    @apply inline-flex items-center gap-1.5 rounded px-2 py-1 text-[13px] uppercase tracking-[0.12em] text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-sunset-300;
   }
 
   .field {
-    @apply w-full rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 text-[13px] text-slate-100 placeholder:text-slate-600 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
+    @apply w-full rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 text-[15px] text-slate-100 placeholder:text-slate-600 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
   }
 
   .select {
-    @apply w-full appearance-none rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 pr-8 text-[13px] text-slate-100 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
+    @apply w-full appearance-none rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 pr-8 text-[15px] text-slate-100 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-slate-400;
+    @apply inline-flex items-center gap-1.5 rounded border border-white/10 px-2 py-1 text-[12px] uppercase tracking-[0.14em] text-slate-400;
   }
 
   .col-head {
-    @apply text-[9.5px] font-medium uppercase tracking-[0.2em] text-slate-600;
+    @apply text-[11.5px] font-medium uppercase tracking-[0.2em] text-slate-600;
   }
 
   /* ticket paper: the physical stub at the bottom of every pass */
