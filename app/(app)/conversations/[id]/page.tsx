@@ -45,36 +45,39 @@ export default function ConversationDetailPage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4">
       <Link href="/conversations" className="btn-quiet -ml-2">
-        <ArrowRightIcon className="h-3.5 w-3.5 rotate-180" />
+        <ArrowRightIcon className="h-3 w-3 rotate-180" />
         {t("conversations.back")}
       </Link>
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-slate-50">
-            {conversation?.title ?? t("conversations.title")}
-          </h1>
+      <section className="border border-white/10 bg-abyss-900">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="col-head shrink-0">{t("conversations.readOnly")}</span>
+            <span className="h-3 w-px bg-white/10" aria-hidden="true" />
+            <h1 className="min-w-0 truncate text-[12px] text-slate-200">
+              {conversation?.title ?? t("conversations.title")}
+            </h1>
+          </div>
           {conversation && (
-            <p className="mt-1 text-[11.5px] text-slate-500">
-              {t("conversations.updated", { time: formatDateTime(conversation.updatedAt, lang) })}
-            </p>
+            <span className="mono text-[10px] text-slate-600">
+              {formatDateTime(conversation.updatedAt, lang)}
+            </span>
+          )}
+        </header>
+
+        <div className="px-4 py-4 sm:px-5">
+          {loading ? (
+            <p className="py-12 text-center text-[11px] text-slate-600">{t("common.loading")}</p>
+          ) : error ? (
+            <p className="py-12 text-center text-[11px] text-rose-300">{error}</p>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {messages.map((message) => (
+                <MessageBubble key={message.id} message={message} readOnly />
+              ))}
+            </div>
           )}
         </div>
-        <span className="pill">{t("conversations.readOnly")}</span>
-      </header>
-
-      <section className="card px-4 py-5 sm:px-6">
-        {loading ? (
-          <p className="py-10 text-center text-xs text-slate-500">{t("common.loading")}</p>
-        ) : error ? (
-          <p className="py-10 text-center text-xs text-rose-300">{error}</p>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} readOnly />
-            ))}
-          </div>
-        )}
       </section>
     </div>
   );

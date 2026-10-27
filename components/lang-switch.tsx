@@ -12,11 +12,7 @@ export function LangSwitch() {
   const { lang, setLang } = useI18n();
 
   return (
-    <div
-      className="flex items-center rounded-full border border-white/10 bg-white/[0.04] p-0.5"
-      role="group"
-      aria-label="Language"
-    >
+    <div className="flex items-center border border-white/10" role="group" aria-label="Language">
       {OPTIONS.map((option) => {
         const active = option.value === lang;
         return (
@@ -25,10 +21,10 @@ export function LangSwitch() {
             type="button"
             onClick={() => setLang(option.value)}
             aria-pressed={active}
-            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide transition ${
+            className={`px-2 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${
               active
-                ? "bg-ocean-500/20 text-ocean-200 ring-1 ring-inset ring-ocean-400/40"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-ocean-400 text-abyss-950"
+                : "text-slate-500 hover:bg-white/[0.05] hover:text-slate-300"
             }`}
           >
             {option.label}

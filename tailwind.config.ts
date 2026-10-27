@@ -9,38 +9,103 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // warm night: red channel highest, so nothing reads as cold grey
         abyss: {
-          950: "#050d16",
-          900: "#07131f",
-          850: "#0a1a28",
-          800: "#0d2131",
-          700: "#123043",
+          950: "#120e0c",
+          900: "#1a1512",
+          850: "#221b17",
+          800: "#2b221d",
+          700: "#3a2f27",
         },
+        // slate is remapped to a warm stone ramp so existing text classes go warm
+        slate: {
+          50: "#fbf6f0",
+          100: "#f3e9dc",
+          200: "#e6d6c4",
+          300: "#d2bda9",
+          400: "#b49d88",
+          500: "#937c69",
+          600: "#735f50",
+          700: "#54453a",
+          800: "#3d322a",
+          900: "#2a221c",
+        },
+        // copper: routes, links, secondary information
         ocean: {
-          300: "#7ce8dd",
-          400: "#3fd6c6",
-          500: "#16b8a8",
-          600: "#0f9488",
+          200: "#f0d2b6",
+          300: "#e4b189",
+          400: "#d08f60",
+          500: "#b3724a",
+          600: "#8e5838",
         },
-        sand: "#f2c078",
+        // ember: the one thing to click
+        sunset: {
+          300: "#ffb08a",
+          400: "#ff9469",
+          500: "#ff7a45",
+          600: "#e05b28",
+        },
+        sand: "#ffc46b",
+        lamp: {
+          300: "#ffeacf",
+          400: "#ffdcb8",
+          500: "#f2c096",
+        },
+        cream: {
+          50: "#fdf8f0",
+          100: "#f8efe1",
+          200: "#eee0cb",
+        },
+        ink: {
+          600: "#6b5748",
+          700: "#4a3c31",
+          900: "#241c17",
+        },
+      },
+      fontFamily: {
+        mono: [
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Consolas",
+          "Liberation Mono",
+          "monospace",
+        ],
+        display: ["ui-serif", "Georgia", "Cambria", "Times New Roman", "serif"],
       },
       boxShadow: {
-        card: "0 20px 60px -30px rgba(0, 0, 0, 0.9)",
-        glow: "0 0 0 1px rgba(63, 214, 198, 0.25), 0 18px 45px -25px rgba(22, 184, 168, 0.55)",
+        pass: "inset 0 1px 0 0 rgba(255,220,184,0.06)",
+        ember: "0 12px 28px -14px rgba(255, 122, 69, 0.9)",
       },
       keyframes: {
         rise: {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "0%": { opacity: "0", transform: "translateY(6px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        pulseSoft: {
+        blink: {
           "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.45" },
+          "50%": { opacity: "0.3" },
+        },
+        flow: {
+          "0%": { strokeDashoffset: "0" },
+          "100%": { strokeDashoffset: "-28" },
+        },
+        stamp: {
+          "0%": { opacity: "0", transform: "rotate(-8deg) scale(1.5)" },
+          "60%": { opacity: "1" },
+          "100%": { opacity: "1", transform: "rotate(-8deg) scale(1)" },
+        },
+        glow: {
+          "0%, 100%": { opacity: "0.5" },
+          "50%": { opacity: "0.8" },
         },
       },
       animation: {
-        rise: "rise 0.28s ease-out both",
-        pulseSoft: "pulseSoft 1.4s ease-in-out infinite",
+        rise: "rise 0.24s ease-out both",
+        blink: "blink 1.6s steps(2, end) infinite",
+        flow: "flow 1.1s linear infinite",
+        stamp: "stamp 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both",
+        glow: "glow 8s ease-in-out infinite",
       },
     },
   },

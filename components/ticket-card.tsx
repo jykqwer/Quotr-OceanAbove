@@ -1,7 +1,7 @@
 "use client";
 
-import { LegTimeline } from "@/components/leg-timeline";
-import { ArrowRightIcon, TicketIcon } from "@/components/icons";
+import { LegTable } from "@/components/leg-timeline";
+import { Barcode, IssuedStamp, PerforatedRule } from "@/components/pass-parts";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/lang-provider";
 import type { Ticket } from "@/lib/types";
@@ -10,63 +10,76 @@ export function TicketCard({ ticket }: { ticket: Ticket }) {
   const { t, lang } = useI18n();
 
   return (
-    <article className="card overflow-hidden animate-rise">
-      <div className="flex flex-wrap items-center gap-3 border-b border-white/10 bg-white/[0.03] px-4 py-3.5 sm:px-5">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-[15px] font-semibold text-slate-50">
-            <span className="truncate">{ticket.origin}</span>
-            <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-ocean-400" />
-            <span className="truncate">{ticket.destination}</span>
-          </p>
-          <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-slate-500">
-            {ticket.id}
-          </p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-ocean-400/30 bg-ocean-500/10 px-2.5 py-1 text-[11px] font-medium text-ocean-200">
-          <TicketIcon className="h-3.5 w-3.5" />
+    <article className="overflow-hidden rounded-lg border border-white/15 bg-abyss-900 shadow-pass animate-rise">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2">
+        <span className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+            OA
+          </span>
+          <span className="col-head">{t("pass.ticketLabel")}</span>
+          <span className="mono text-[10px] text-slate-500">{ticket.id}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-sunset-300">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-sunset-400" />
           {t("quote.booked")}
         </span>
-        <span className="font-mono text-lg font-semibold tabular-nums text-sand">
-          {formatUsd(ticket.priceUsd)}
-        </span>
+      </header>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-3 px-4 pb-3.5 pt-3.5">
+        <div className="min-w-0">
+          <p className="col-head">{t("pass.from")}</p>
+          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">{ticket.origin}</p>
+        </div>
+        <div className="pb-1.5 text-[14px] text-sunset-400" aria-hidden="true">
+          →
+        </div>
+        <div className="min-w-0 text-right">
+          <p className="col-head">{t("pass.to")}</p>
+          <p className="display mt-1 truncate text-[23px] leading-tight text-slate-50">
+            {ticket.destination}
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-5 px-4 py-4 sm:px-5 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-        <div className="rounded-xl border border-white/5 bg-black/20 px-3.5 py-3">
-          <LegTimeline legs={ticket.legs} dense />
-        </div>
+      <div className="px-4 pb-3">
+        <LegTable legs={ticket.legs} />
+      </div>
 
-        <dl className="grid grid-cols-2 gap-3 self-start text-xs md:grid-cols-1">
-          <div>
-            <dt className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-              {t("quote.totalDistance")}
-            </dt>
-            <dd className="mt-0.5 font-mono text-[13px] tabular-nums text-slate-200">
-              {formatKm(ticket.totalDistanceKm)}
-            </dd>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 pb-3 sm:grid-cols-4">
+        <Field label={t("quote.totalDistance")} value={formatKm(ticket.totalDistanceKm)} mono />
+        <Field label={t("tickets.passenger")} value={ticket.passenger} />
+        <Field label={t("tickets.bookedAtLabel")} value={formatDateTime(ticket.bookedAt, lang)} mono />
+        <Field label={t("tickets.ticketId")} value={ticket.id} mono />
+      </div>
+
+      <PerforatedRule />
+
+      <div className="paper relative px-4 py-3">
+        <IssuedStamp label={t("quote.booked")} />
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="col-head">{t("quote.totalPrice")}</p>
+            <p className="mono mt-0.5 text-[27px] leading-none text-sunset-600">
+              {formatUsd(ticket.priceUsd)}
+            </p>
           </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-              {t("tickets.passenger")}
-            </dt>
-            <dd className="mt-0.5 text-[13px] text-slate-200">{ticket.passenger}</dd>
-          </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-              {t("tickets.ticketId")}
-            </dt>
-            <dd className="mt-0.5 font-mono text-[13px] text-slate-200">{ticket.id}</dd>
-          </div>
-          <div>
-            <dt className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
-              {t("tickets.bookedAtLabel")}
-            </dt>
-            <dd className="mt-0.5 text-[13px] text-slate-200">
-              {formatDateTime(ticket.bookedAt, lang)}
-            </dd>
-          </div>
-        </dl>
+          <span className="hidden sm:block">
+            <Barcode value={ticket.id} />
+          </span>
+        </div>
+        <p className="mono mt-2 border-t border-ink-900/15 pt-2 text-[10px] uppercase tracking-[0.14em] text-ink-600">
+          {t("quote.ticketFor")}
+        </p>
       </div>
     </article>
+  );
+}
+
+function Field({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <p className="col-head">{label}</p>
+      <p className={`mt-1 truncate text-[12px] text-slate-300 ${mono ? "mono" : ""}`}>{value}</p>
+    </div>
   );
 }

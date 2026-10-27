@@ -1,56 +1,57 @@
 "use client";
 
-import { CheckIcon, WaveMark } from "@/components/icons";
+import { WaveMark } from "@/components/icons";
 import { useI18n } from "@/lib/i18n/lang-provider";
+import type { Network } from "@/lib/types";
 
-export function LoginHero() {
+export function LoginHero({ stats }: { stats: Network["stats"] }) {
   const { t } = useI18n();
-  const features = [t("login.feature1"), t("login.feature2"), t("login.feature3")];
+
+  const rows = [
+    { code: "CITIES", value: stats.cities, note: t("map.statCities") },
+    { code: "HUBS", value: stats.hubs, note: t("map.statHubs") },
+    { code: "HUB ROUTES", value: stats.links, note: t("map.statLinks") },
+    { code: "NO SERVICE", value: stats.citiesWithoutService, note: t("map.statNoService") },
+  ];
 
   return (
     <section className="hidden lg:block">
       <div className="flex items-center gap-3">
-        <WaveMark className="h-11 w-11" />
+        <WaveMark className="h-9 w-9" />
         <div>
-          <p className="text-base font-semibold tracking-wide text-slate-50">{t("brand.name")}</p>
-          <p className="text-[11px] uppercase tracking-[0.24em] text-slate-500">
+          <p className="text-[13px] font-semibold uppercase tracking-[0.24em] text-slate-100">
+            {t("brand.name")}
+          </p>
+          <p className="mt-1 text-[9px] uppercase tracking-[0.26em] text-slate-600">
             {t("brand.tagline")}
           </p>
         </div>
       </div>
 
-      <h1 className="mt-12 max-w-lg text-balance text-4xl font-semibold leading-tight tracking-tight text-slate-50">
+      <h1 className="mt-14 max-w-[420px] text-balance text-[32px] font-medium leading-[1.15] tracking-tight text-slate-100">
         {t("login.heroTitle")}
       </h1>
-      <p className="mt-4 max-w-md text-[14px] leading-relaxed text-slate-400">
+      <p className="mt-4 max-w-[380px] text-[13px] leading-relaxed text-slate-400">
         {t("login.heroSubtitle")}
       </p>
 
-      <ul className="mt-8 space-y-3">
-        {features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5 text-[13px] text-slate-300">
-            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border border-ocean-400/30 bg-ocean-500/10">
-              <CheckIcon className="h-3 w-3 text-ocean-300" />
-            </span>
-            {feature}
-          </li>
-        ))}
-      </ul>
+      <table className="mt-12 w-full max-w-[420px] border-collapse text-left">
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.code} className="border-t border-white/10 last:border-b">
+              <th scope="row" className="col-head py-2.5 pr-4 font-medium">
+                {row.code}
+              </th>
+              <td className="mono py-2.5 text-right text-[15px] text-slate-200">{row.value}</td>
+              <td className="py-2.5 pl-4 text-right text-[10.5px] text-slate-600">{row.note}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-      <div className="mt-12 flex items-center gap-6 text-[11px] text-slate-600">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-ocean-400" />
-          711 cities
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-sand" />
-          40 hubs
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-          151 hub routes
-        </span>
-      </div>
+      <p className="mono mt-6 text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
+        {t("map.note")}
+      </p>
     </section>
   );
 }

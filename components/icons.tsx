@@ -4,11 +4,16 @@ type IconProps = SVGProps<SVGSVGElement>;
 
 export function WaveMark({ className = "h-9 w-9" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 40 40" fill="none" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 40 40"
+      fill="none"
+      className={`text-sunset-400 ${className}`}
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id="oa-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#3FD6C6" />
-          <stop offset="1" stopColor="#0F9488" />
+          <stop stopColor="currentColor" />
+          <stop offset="1" stopColor="currentColor" stopOpacity="0.55" />
         </linearGradient>
       </defs>
       <circle cx="20" cy="20" r="19" stroke="url(#oa-grad)" strokeWidth="1.6" opacity="0.7" />
@@ -20,12 +25,22 @@ export function WaveMark({ className = "h-9 w-9" }: { className?: string }) {
       />
       <path
         d="M6 30c3.2 0 3.2-2.6 6.4-2.6s3.2 2.6 6.4 2.6 3.2-2.6 6.4-2.6 3.2 2.6 6.4 2.6"
-        stroke="#F2C078"
+        className="text-sand"
+        stroke="currentColor"
         strokeOpacity="0.55"
         strokeWidth="1.4"
         strokeLinecap="round"
       />
       <path d="M12.5 18.2 27 10l-6.1 8.9-8.4-.7Z" fill="url(#oa-grad)" />
+    </svg>
+  );
+}
+
+export function HomeIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className} {...props}>
+      <path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19v-8.5Z" strokeLinejoin="round" />
+      <path d="M9.5 20.5v-6h5v6" strokeLinejoin="round" />
     </svg>
   );
 }

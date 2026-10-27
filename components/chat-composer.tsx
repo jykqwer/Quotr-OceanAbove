@@ -19,7 +19,7 @@ export function ChatComposer({
     const element = textareaRef.current;
     if (!element) return;
     element.style.height = "auto";
-    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+    element.style.height = `${Math.min(element.scrollHeight, 132)}px`;
   }, [value]);
 
   function submit() {
@@ -35,33 +35,37 @@ export function ChatComposer({
         event.preventDefault();
         submit();
       }}
-      className="rounded-2xl border border-white/10 bg-white/[0.04] p-1.5 transition focus-within:border-ocean-400/40 focus-within:ring-2 focus-within:ring-ocean-500/20"
+      className="flex items-stretch border border-white/15 bg-abyss-950 focus-within:border-ocean-400"
     >
-      <div className="flex items-end gap-2">
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              submit();
-            }
-          }}
-          placeholder={t("chat.placeholder")}
-          className="max-h-40 flex-1 resize-none bg-transparent px-3 py-2.5 text-[13.5px] leading-relaxed text-slate-100 outline-none placeholder:text-slate-500 disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={disabled || value.trim().length === 0}
-          aria-label={t("chat.send")}
-          className="btn-primary h-10 w-10 shrink-0 rounded-xl p-0"
-        >
-          <SendIcon className="h-4 w-4" />
-        </button>
-      </div>
+      <span
+        aria-hidden="true"
+        className="mono hidden select-none items-start border-r border-white/10 px-2.5 pt-3 text-[12px] text-ocean-400/70 sm:block"
+      >
+        &gt;
+      </span>
+      <textarea
+        ref={textareaRef}
+        rows={1}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            submit();
+          }
+        }}
+        placeholder={t("chat.placeholder")}
+        className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[13px] leading-relaxed text-slate-100 outline-none placeholder:text-slate-600 disabled:opacity-60"
+      />
+      <button
+        type="submit"
+        disabled={disabled || value.trim().length === 0}
+        aria-label={t("chat.send")}
+        className="flex w-12 shrink-0 items-center justify-center border-l border-white/10 bg-sunset-500 text-abyss-950 transition-colors hover:bg-sunset-400 disabled:bg-transparent disabled:text-slate-600"
+      >
+        <SendIcon className="h-4 w-4" />
+      </button>
     </form>
   );
 }

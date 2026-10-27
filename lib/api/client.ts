@@ -3,6 +3,7 @@ import type {
   Conversation,
   Lang,
   Message,
+  Network,
   Quote,
   SessionUser,
   Ticket,
@@ -82,4 +83,6 @@ export const api = {
     }),
 
   listTickets: () => request<{ tickets: Ticket[] }>("/api/tickets"),
+
+  getNetwork: () => request<{ network: Network }>("/api/network"),
 };

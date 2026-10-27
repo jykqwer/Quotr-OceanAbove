@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatComposer } from "@/components/chat-composer";
 import { ConversationList } from "@/components/conversation-list";
 import { MessageBubble } from "@/components/message-bubble";
-import { ListIcon, PlaneIcon } from "@/components/icons";
+import { ListIcon } from "@/components/icons";
 import { api } from "@/lib/api/client";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
@@ -13,6 +14,9 @@ import type { Conversation, Message, Quote, Ticket } from "@/lib/types";
 
 export default function ChatPage() {
   const { t, lang } = useI18n();
+  const searchParams = useSearchParams();
+  const requestedId = searchParams.get("c");
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -29,14 +33,17 @@ export default function ChatPage() {
       try {
         const { conversations: list } = await api.listConversations();
         setConversations(list);
-        if (selectFirst) setActiveId((current) => current ?? list[0]?.id ?? null);
+        if (selectFirst) {
+          const preferred = requestedId && list.some((item) => item.id === requestedId) ? requestedId : null;
+          setActiveId((current) => current ?? preferred ?? list[0]?.id ?? null);
+        }
       } catch {
         setError(t("chat.errorGeneric"));
       } finally {
         setListLoading(false);
       }
     },
-    [t],
+    [requestedId, t],
   );
 
   useEffect(() => {
@@ -79,9 +86,7 @@ export default function ChatPage() {
   const handleQuoteUpdated = useCallback(
     (quote: Quote, ticket?: Ticket) => {
       setMessages((current) =>
-        current.map((message) =>
-          message.quote?.id === quote.id ? { ...message, quote } : message,
-        ),
+        current.map((message) => (message.quote?.id === quote.id ? { ...message, quote } : message)),
       );
       if (ticket) void loadConversations(false);
     },
@@ -93,14 +98,16 @@ export default function ChatPage() {
     setError(null);
 
     const optimisticId = `pending-${Date.now()}`;
-    const optimistic: Message = {
-      id: optimisticId,
-      conversationId: activeId ?? "",
-      role: "user",
-      content: text,
-      createdAt: new Date().toISOString(),
-    };
-    setMessages((current) => [...current, optimistic]);
+    setMessages((current) => [
+      ...current,
+      {
+        id: optimisticId,
+        conversationId: activeId ?? "",
+        role: "user",
+        content: text,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
 
     try {
       const result = await api.chat({ conversationId: activeId ?? undefined, text, lang });
@@ -131,10 +138,11 @@ export default function ChatPage() {
     setError(null);
   }
 
+  const active = conversations.find((item) => item.id === activeId) ?? null;
   const isEmpty = messages.length === 0 && !threadLoading;
 
   return (
-    <div className="grid h-[calc(100dvh-12.5rem)] min-h-[520px] grid-cols-1 gap-4 lg:h-[calc(100dvh-11.5rem)] lg:min-h-[560px] lg:grid-cols-[270px_minmax(0,1fr)] xl:grid-cols-[290px_minmax(0,1fr)]">
+    <div className="grid h-[calc(100dvh-12.5rem)] min-h-[520px] grid-cols-1 gap-4 lg:grid-cols-[248px_minmax(0,1fr)]">
       <ConversationList
         conversations={conversations}
         activeId={activeId}
@@ -143,75 +151,65 @@ export default function ChatPage() {
         loading={listLoading}
       />
 
-      <section className="card flex min-h-0 flex-col overflow-hidden">
-        <header className="flex items-center gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-sm font-semibold text-slate-100">{t("chat.title")}</h1>
-            <p className="mt-0.5 hidden truncate text-[11px] text-slate-500 sm:block">
-              {t("chat.subtitle")}
-            </p>
-          </div>
-          <span className="hidden items-center gap-1.5 rounded-full border border-sand/25 bg-sand/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-sand sm:inline-flex">
+      <section className="flex min-h-0 flex-col border border-white/10 bg-abyss-900">
+        <header className="flex items-center gap-3 border-b border-white/10 px-4 py-2">
+          <span className="col-head hidden shrink-0 sm:inline">{t("chat.title")}</span>
+          <span className="hidden h-3 w-px bg-white/10 sm:block" aria-hidden="true" />
+          <h1 className="min-w-0 flex-1 truncate text-[12px] text-slate-200">
+            {active?.title ?? t("chat.newChat")}
+          </h1>
+          <span className="mono hidden text-[9px] uppercase tracking-[0.14em] text-slate-700 md:block">
             {t("chat.previewBadge")}
           </span>
-          <Link href="/conversations" className="btn-quiet lg:hidden">
+          <Link href="/conversations" className="btn-quiet shrink-0 lg:hidden" title={t("chat.allConversations")}>
             <ListIcon className="h-3.5 w-3.5" />
-            {t("chat.history")}
+            <span className="hidden sm:inline">{t("chat.allConversations")}</span>
           </Link>
         </header>
 
-        <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           {threadLoading && messages.length === 0 ? (
-            <p className="py-16 text-center text-xs text-slate-500">{t("common.loading")}</p>
+            <p className="py-16 text-center text-[11px] text-slate-600">{t("common.loading")}</p>
           ) : isEmpty ? (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-ocean-500/25 bg-ocean-500/10">
-                <PlaneIcon className="h-5 w-5 text-ocean-300" />
-              </span>
-              <h2 className="mt-4 text-lg font-semibold tracking-tight text-slate-100">
-                {t("chat.emptyTitle")}
-              </h2>
-              <p className="mt-1.5 max-w-md text-[13px] leading-relaxed text-slate-400">
-                {t("chat.emptyHint")}
-              </p>
-              <div className="mt-6 flex max-w-lg flex-wrap justify-center gap-2">
+            <div className="mx-auto flex h-full max-w-md flex-col justify-center">
+              <p className="col-head">{t("chat.emptyTitle")}</p>
+              <p className="mt-2 text-[12.5px] leading-relaxed text-slate-400">{t("chat.emptyHint")}</p>
+              <ul className="mt-5 divide-y divide-white/5 border-y border-white/5">
                 {suggestions[lang].map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    disabled={sending}
-                    onClick={() => void handleSend(suggestion)}
-                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12px] text-slate-300 transition hover:border-ocean-400/35 hover:bg-ocean-500/10 hover:text-ocean-100 disabled:opacity-50"
-                  >
-                    {suggestion}
-                  </button>
+                  <li key={suggestion}>
+                    <button
+                      type="button"
+                      disabled={sending}
+                      onClick={() => void handleSend(suggestion)}
+                      className="group flex w-full items-center gap-2 py-2 text-left disabled:opacity-40"
+                    >
+                      <span aria-hidden="true" className="mono text-[10px] text-sunset-500/70">▸</span>
+                        <span className="flex-1 text-[12px] text-slate-300 transition-colors group-hover:text-sunset-200">
+                        {suggestion}
+                      </span>
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           ) : (
-            <div className="mx-auto flex max-w-3xl flex-col gap-6">
+            <div className="mx-auto flex max-w-3xl flex-col gap-5">
               {messages.map((message) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  onQuoteUpdated={handleQuoteUpdated}
-                />
+                <MessageBubble key={message.id} message={message} onQuoteUpdated={handleQuoteUpdated} />
               ))}
               {sending && (
-                <div className="flex items-center gap-2 text-[11px] text-slate-500">
-                  <span className="h-1.5 w-1.5 animate-pulseSoft rounded-full bg-ocean-400" />
+                <p className="mono pl-12 text-[10px] uppercase tracking-[0.16em] text-slate-600 animate-blink sm:pl-16">
                   {t("chat.thinking")}
-                </div>
+                </p>
               )}
               <div ref={bottomRef} />
             </div>
           )}
         </div>
 
-        <div className="border-t border-white/10 px-3 py-3 sm:px-4">
-          {error && <p className="mb-2 px-1 text-[11px] text-rose-300">{error}</p>}
+        <div className="border-t border-white/10 p-3">
+          {error && <p className="mb-2 text-[11px] text-rose-300">{error}</p>}
           <ChatComposer onSend={handleSend} disabled={sending} />
-          <p className="mt-2 px-1 text-center text-[10px] text-slate-600">{t("quote.priceNote")}</p>
         </div>
       </section>
     </div>

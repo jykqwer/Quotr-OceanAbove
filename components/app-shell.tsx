@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChatIcon, ListIcon, LogoutIcon, TicketIcon, WaveMark } from "@/components/icons";
+import { ChatIcon, HomeIcon, LogoutIcon, TicketIcon, WaveMark } from "@/components/icons";
 import { LangSwitch } from "@/components/lang-switch";
 import { api } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/lang-provider";
 import type { SessionUser } from "@/lib/types";
 
 const NAV = [
+  { href: "/", labelKey: "nav.home", Icon: HomeIcon },
   { href: "/chat", labelKey: "nav.chat", Icon: ChatIcon },
   { href: "/tickets", labelKey: "nav.tickets", Icon: TicketIcon },
-  { href: "/conversations", labelKey: "nav.conversations", Icon: ListIcon },
 ] as const;
+
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AppShell({
   user,
@@ -32,59 +37,72 @@ export function AppShell({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-5 sm:px-6">
-      <header className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
-        <Link href="/chat" className="flex items-center gap-2.5">
-          <WaveMark />
-          <span className="leading-tight">
-            <span className="block text-sm font-semibold tracking-wide text-slate-50">
-              {t("brand.name")}
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-abyss-950">
+        <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4 sm:gap-6 sm:px-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5">
+            <WaveMark className="h-7 w-7" />
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="text-[12px] font-semibold uppercase tracking-[0.22em] text-slate-100">
+                {t("brand.name")}
+              </span>
+              <span className="mt-1 text-[8.5px] uppercase tracking-[0.24em] text-slate-600">
+                {t("brand.tagline")}
+              </span>
             </span>
-            <span className="block text-[10px] uppercase tracking-[0.2em] text-slate-500">
-              {t("brand.tagline")}
-            </span>
-          </span>
-        </Link>
+          </Link>
 
-        <nav className="order-3 flex w-full min-w-0 gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1 sm:order-none sm:ml-4 sm:w-auto">
-          {NAV.map(({ href, labelKey, Icon }) => {
-            const active = pathname === href || pathname.startsWith(`${href}/`);
-            return (
-              <Link
-                key={href}
-                href={href}
-                title={t(labelKey)}
-                className={`flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition sm:flex-none sm:px-3.5 ${
-                  active
-                    ? "bg-ocean-500/15 text-ocean-200 ring-1 ring-inset ring-ocean-400/30"
-                    : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
-                }`}
-              >
-                <Icon className="h-[15px] w-[15px] shrink-0" />
-                <span className="hidden whitespace-nowrap sm:inline">{t(labelKey)}</span>
-              </Link>
-            );
-          })}
-        </nav>
+          <nav className="flex min-w-0 flex-1 items-stretch gap-1 self-stretch">
+            {NAV.map(({ href, labelKey, Icon }) => {
+              const active = isActive(pathname, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-2.5 text-[11px] uppercase tracking-[0.14em] transition-colors sm:px-3.5 ${
+                    active
+                      ? "border-sunset-500 text-slate-50"
+                      : "border-transparent text-slate-500 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{t(labelKey)}</span>
+                  <span className="sr-only sm:hidden">{t(labelKey)}</span>
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="ml-auto flex items-center gap-2">
-          <LangSwitch />
-          <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-1.5 sm:flex">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-ocean-500/15 text-[10px] font-semibold uppercase text-ocean-200">
-              {user.displayName.slice(0, 2)}
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <LangSwitch />
+            <span className="hidden items-center gap-2 border-l border-white/10 pl-3 lg:flex">
+              <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-600">
+                {t("nav.signedIn")}
+              </span>
+              <span className="mono text-[11px] text-slate-300">{user.displayName}</span>
             </span>
-            <span className="max-w-28 truncate text-xs text-slate-300">{user.displayName}</span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title={t("nav.signOut")}
+              aria-label={t("nav.signOut")}
+              className="flex h-7 w-7 items-center justify-center border border-white/10 text-slate-500 transition-colors hover:border-white/25 hover:text-slate-200"
+            >
+              <LogoutIcon className="h-3.5 w-3.5" />
+            </button>
           </div>
-          <button type="button" onClick={handleSignOut} className="btn-quiet" title={t("nav.signOut")}>
-            <LogoutIcon />
-            <span className="hidden sm:inline">{t("nav.signOut")}</span>
-          </button>
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6 sm:py-6">{children}</main>
 
-      <footer className="pt-5 text-center text-[11px] text-slate-600">{t("footer.note")}</footer>
+      <footer className="border-t border-white/10">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-between gap-2 px-4 py-3 text-[9.5px] uppercase tracking-[0.14em] text-slate-600 sm:px-6">
+          <span>{t("footer.note")}</span>
+          <span className="mono">locations.db · read-only</span>
+        </div>
+      </footer>
     </div>
   );
 }

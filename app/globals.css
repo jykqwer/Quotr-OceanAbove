@@ -13,77 +13,100 @@
   }
 
   body {
-    background-color: #050d16;
+    background-color: #120e0c;
     background-image:
-      radial-gradient(1100px 620px at 12% -12%, rgba(22, 184, 168, 0.18), transparent 62%),
-      radial-gradient(900px 480px at 92% -4%, rgba(242, 192, 120, 0.1), transparent 58%),
-      linear-gradient(180deg, #050d16 0%, #07131f 42%, #040b13 100%);
+      radial-gradient(1200px 620px at 50% 114%, rgba(255, 122, 69, 0.14), transparent 70%),
+      radial-gradient(900px 520px at 10% -12%, rgba(255, 196, 107, 0.07), transparent 62%),
+      linear-gradient(180deg, #120e0c 0%, #171110 52%, #1c1511 100%);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
 
   ::selection {
-    background: rgba(63, 214, 198, 0.3);
+    background: rgba(255, 122, 69, 0.32);
   }
 }
 
 @layer components {
-  .glass {
-    @apply border border-white/10 bg-white/[0.045] backdrop-blur-xl;
+  .panel {
+    @apply rounded-lg border border-white/10 bg-abyss-900;
   }
 
-  .card {
-    @apply glass rounded-2xl shadow-card;
-  }
-
-  .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300;
-  }
-
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
-  }
-
-  .btn-primary {
-    @apply btn bg-ocean-500 text-abyss-950 shadow-glow hover:bg-ocean-400;
-  }
-
-  .btn-ghost {
-    @apply btn border border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08];
-  }
-
-  .btn-quiet {
-    @apply inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-200;
-  }
-
-  .field {
-    @apply w-full rounded-xl border border-white/10 bg-abyss-900/70 px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:border-ocean-400/70 focus:outline-none focus:ring-2 focus:ring-ocean-500/30;
+  .rule {
+    @apply border-t border-white/10;
   }
 
   .label {
-    @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-400;
+    @apply text-[10px] font-medium uppercase tracking-[0.18em] text-slate-500;
   }
 
-  .hairline {
-    @apply border-t border-white/10;
+  .mono {
+    @apply font-mono tabular-nums;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .display {
+    @apply font-display tracking-tight;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-[12px] font-medium uppercase tracking-[0.1em] transition disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-primary {
+    @apply btn bg-sunset-500 text-abyss-950 shadow-ember hover:bg-sunset-400;
+  }
+
+  .btn-ghost {
+    @apply btn border border-white/15 text-slate-300 hover:border-sunset-400/50 hover:bg-sunset-500/10 hover:text-sunset-300;
+  }
+
+  .btn-quiet {
+    @apply inline-flex items-center gap-1.5 rounded px-2 py-1 text-[11px] uppercase tracking-[0.12em] text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-sunset-300;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 text-[13px] text-slate-100 placeholder:text-slate-600 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
+  }
+
+  .select {
+    @apply w-full appearance-none rounded-lg border border-white/15 bg-abyss-950 px-3 py-2.5 pr-8 text-[13px] text-slate-100 focus:border-sunset-400 focus:outline-none focus:ring-2 focus:ring-sunset-500/20;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-slate-400;
+  }
+
+  .col-head {
+    @apply text-[9.5px] font-medium uppercase tracking-[0.2em] text-slate-600;
+  }
+
+  /* ticket paper: the physical stub at the bottom of every pass */
+  .paper {
+    @apply bg-cream-100 text-ink-900;
+    background-image: radial-gradient(rgba(74, 60, 49, 0.07) 1px, transparent 1px);
+    background-size: 4px 4px;
+  }
+
+  .paper .col-head {
+    @apply text-ink-600;
   }
 }
 
 @layer utilities {
   .scroll-slim {
     scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+    scrollbar-color: rgba(180, 157, 136, 0.28) transparent;
   }
 
   .scroll-slim::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   .scroll-slim::-webkit-scrollbar-thumb {
-    border-radius: 9999px;
-    background: rgba(148, 163, 184, 0.28);
+    background: rgba(180, 157, 136, 0.24);
   }
 
   .text-balance {

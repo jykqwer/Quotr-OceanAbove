@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRightIcon, WaveMark } from "@/components/icons";
 import { LangSwitch } from "@/components/lang-switch";
 import { ApiError, api } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/lang-provider";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Mode = "signin" | "signup";
 
@@ -61,7 +61,7 @@ export function AuthForm() {
       } else {
         await api.register(name, password);
       }
-      router.replace("/chat");
+      router.replace("/");
       router.refresh();
     } catch (cause) {
       setError(describeError(cause));
@@ -71,35 +71,32 @@ export function AuthForm() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <WaveMark className="h-8 w-8" />
-          <span className="text-sm font-semibold tracking-wide text-slate-50">
-            {t("brand.name")}
-          </span>
-        </div>
+    <div className="w-full max-w-[380px]">
+      <div className="mb-4 flex items-center justify-between sm:hidden">
+        <WaveMark className="h-7 w-7" />
         <LangSwitch />
       </div>
 
-      <div className="card p-6">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-50">
-          {mode === "signin" ? t("auth.signInTitle") : t("auth.signUpTitle")}
-        </h1>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-slate-400">
-          {mode === "signin" ? t("auth.subtitle") : t("auth.signUpSubtitle")}
-        </p>
+      <div className="border border-white/10 bg-abyss-900">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+          <span className="col-head">
+            {mode === "signin" ? t("auth.signInTitle") : t("auth.signUpTitle")}
+          </span>
+          <span className="hidden sm:block">
+            <LangSwitch />
+          </span>
+        </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 px-4 py-4">
           <div>
-            <label htmlFor="username" className="label">
+            <label htmlFor="username" className="col-head mb-1.5 block">
               {t("auth.username")}
             </label>
             <input
               id="username"
               name="username"
               autoComplete="username"
-              className="field"
+              className="field mono"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               placeholder={t("auth.usernamePlaceholder")}
@@ -107,7 +104,7 @@ export function AuthForm() {
           </div>
 
           <div>
-            <label htmlFor="password" className="label">
+            <label htmlFor="password" className="col-head mb-1.5 block">
               {t("auth.password")}
             </label>
             <input
@@ -115,7 +112,7 @@ export function AuthForm() {
               name="password"
               type="password"
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              className="field"
+              className="field mono"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder={t("auth.passwordPlaceholder")}
@@ -123,7 +120,7 @@ export function AuthForm() {
           </div>
 
           {error && (
-            <p className="rounded-lg border border-rose-400/25 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
+            <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[11px] text-rose-300">
               {error}
             </p>
           )}
@@ -136,27 +133,29 @@ export function AuthForm() {
               : mode === "signin"
                 ? t("auth.signIn")
                 : t("auth.signUp")}
-            <ArrowRightIcon className="h-3.5 w-3.5" />
+            <ArrowRightIcon className="h-3 w-3" />
           </button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError(null);
-          }}
-          className="mt-4 w-full text-center text-[12px] text-slate-400 transition hover:text-ocean-200"
-        >
-          {mode === "signin" ? t("auth.switchToSignUp") : t("auth.switchToSignIn")}
-        </button>
-      </div>
+        <div className="flex items-center justify-between gap-2 border-t border-white/10 px-4 py-2">
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError(null);
+            }}
+            className="text-[11px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
+          >
+            {mode === "signin" ? t("auth.switchToSignUp") : t("auth.switchToSignIn")}
+          </button>
+          <span className="mono text-[9.5px] uppercase tracking-[0.14em] text-slate-700">
+            {t("auth.demoTitle")}
+          </span>
+        </div>
 
-      <div className="mt-4 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5">
-        <span className="mt-0.5 rounded-md bg-sand/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sand">
-          {t("auth.demoTitle")}
-        </span>
-        <p className="font-mono text-[11px] leading-relaxed text-slate-400">{t("auth.demoHint")}</p>
+        <p className="mono border-t border-white/10 px-4 py-2 text-[10.5px] text-slate-500">
+          {t("auth.demoHint")}
+        </p>
       </div>
     </div>
   );

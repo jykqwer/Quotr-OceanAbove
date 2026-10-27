@@ -18,18 +18,19 @@ npm run build      # must pass before calling work done
 ## Architecture
 
 ```
-app/            routes + route handlers (login, (app)/chat, (app)/tickets, (app)/conversations, api/*)
-components/     shared UI (app-shell, quote-card, leg-timeline, message-bubble, ...)
+app/            routes + route handlers (home, login, (app)/chat, (app)/tickets, (app)/conversations, api/*)
+components/     shared UI (app-shell, network-map, quote-card, leg-timeline, message-bubble, ...)
 lib/types.ts    domain types shared by client and server
 lib/format.ts   the only place numbers are formatted
 lib/i18n/       zh/en dictionaries + language context
 lib/api/        typed client used by all pages
+lib/db/         read-only accessors for locations.db (validates the dataset on load)
 lib/mock/       temporary in-memory backend (fixtures, mock agent, store, session cookie)
 lib/domain/     (planned) pure graph + route + pricing engine — the single source of truth for numbers
 locations.db    read-only dataset: cities, coordinates, hub links
 ```
 
-Current phase: UI is complete; `lib/mock/` stands in for persistence and the agent. Keep `/api/*` request/response shapes stable when replacing it, so pages keep working unchanged.
+Current phase: home + pages are complete; `lib/mock/` stands in for persistence and the agent. The home network map renders the raw `locations.db` coordinates, which are an abstract plane, not geography — keep it labeled as such. Keep `/api/*` request/response shapes stable when replacing the mock, so pages keep working unchanged.
 
 ## Non-negotiable domain rules
 
@@ -49,8 +50,9 @@ These come from the product spec and are easy to break; verify them in any chang
 - **i18n**: every user-facing string lives in [lib/i18n/dictionary.ts](./lib/i18n/dictionary.ts) under a flat key, with both `en` and `zh` present (the `Dictionary` type enforces parity). Use `useI18n().t(key, vars)`. **City names are never translated** — always render the database value.
 - **Numbers**: use `formatUsd` / `formatKm` / `formatDateTime` from [lib/format.ts](./lib/format.ts). Do not call `Intl` or `toFixed` in components.
 - **Server vs client**: `lib/mock/store.ts`, `lib/mock/session.ts` and anything touching `node:crypto` or `node:fs` are server-only; never import them from a `"use client"` file. `lib/mock/session.ts` imports `next/headers` for the same reason.
-- **Styling**: use the Tailwind theme tokens `abyss-*`, `ocean-*`, `sand` and the `card` / `btn-*` / `field` classes from [app/globals.css](./app/globals.css) instead of ad-hoc hex values or long duplicated class strings.
+- **Styling**: warm golden-hour palette — `panel` (`rounded-lg border border-white/10 bg-abyss-900`), warm `slate` remapped in the Tailwind config, `col-head` micro-labels, `mono` for every number, `display` serif for city names on passes, `paper` for the cream ticket stub. Ember (`sunset-500`) is the one action per screen; gold (`sand`) is money on dark. Map connections are always quadratic curves (`arcPath` in [components/network-map.tsx](./components/network-map.tsx)), never straight lines. The ground must stay warm — no neutral or cool grey-black. Tokens live in [tailwind.config.ts](./tailwind.config.ts).
 - **Types**: shared shapes belong in [lib/types.ts](./lib/types.ts); the API client in [lib/api/client.ts](./lib/api/client.ts) is the only place pages call `fetch`.
+- **UI work**: follow the project's design language via the `ui-taste` skill ([.github/skills/ui-taste/SKILL.md](./.github/skills/ui-taste/SKILL.md)) — palette discipline, number display, bilingual layout, and the pre-flight checklist.
 - **Client data flow**: pages fetch on mount with an `alive` guard, keep list state locally, and pass quote updates upward instead of refetching the whole thread.
 
 ## Security

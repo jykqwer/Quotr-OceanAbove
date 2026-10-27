@@ -70,3 +70,27 @@ export interface ChatReply {
   userMessage: Message;
   assistantMessage: Message;
 }
+
+export interface NetworkCity {
+  name: string;
+  x: number;
+  y: number;
+  isHub: boolean;
+  hubs: string[];
+}
+
+export interface NetworkLink {
+  a: string;
+  b: string;
+}
+
+export interface Network {
+  cities: NetworkCity[];
+  links: NetworkLink[];
+  stats: {
+    cities: number;
+    hubs: number;
+    links: number;
+    citiesWithoutService: number;
+  };
+}

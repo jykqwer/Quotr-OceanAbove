@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRightIcon, ChatIcon } from "@/components/icons";
+import { ArrowRightIcon } from "@/components/icons";
 import { api } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/format";
 import { useI18n } from "@/lib/i18n/lang-provider";
@@ -33,64 +33,83 @@ export default function ConversationsPage() {
   }, [t]);
 
   return (
-    <div className="space-y-5">
+    <div className="mx-auto w-full max-w-4xl space-y-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight text-slate-50">
+          <h1 className="text-[19px] font-medium tracking-tight text-slate-100">
             {t("conversations.title")}
           </h1>
-          <p className="mt-1 text-[13px] text-slate-400">{t("conversations.subtitle")}</p>
+          <p className="mt-1 text-[12px] text-slate-500">{t("conversations.subtitle")}</p>
         </div>
-        <Link href="/chat" className="btn-ghost text-[13px]">
+        <Link href="/chat" className="btn-ghost">
           {t("common.startChat")}
-          <ArrowRightIcon className="h-3.5 w-3.5" />
+          <ArrowRightIcon className="h-3 w-3" />
         </Link>
       </header>
 
-      {loading ? (
-        <p className="py-16 text-center text-xs text-slate-500">{t("common.loading")}</p>
-      ) : error ? (
-        <p className="py-16 text-center text-xs text-rose-300">{error}</p>
-      ) : conversations.length === 0 ? (
-        <div className="card flex flex-col items-center px-6 py-16 text-center">
-          <span className="grid h-11 w-11 place-items-center rounded-2xl border border-ocean-500/25 bg-ocean-500/10">
-            <ChatIcon className="h-5 w-5 text-ocean-300" />
+      <section className="border border-white/10 bg-abyss-900">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+          <span className="col-head">{t("chat.history")}</span>
+          <span className="mono text-[9.5px] uppercase tracking-[0.14em] text-slate-700">
+            {t("conversations.readOnly")}
           </span>
-          <p className="mt-4 text-sm font-medium text-slate-200">{t("conversations.empty")}</p>
-          <p className="mt-1 max-w-sm text-[12.5px] text-slate-500">
-            {t("conversations.emptyHint")}
-          </p>
         </div>
-      ) : (
-        <ul className="space-y-2">
-          {conversations.map((conversation) => (
-            <li key={conversation.id}>
-              <Link
-                href={`/conversations/${conversation.id}`}
-                className="card flex items-center gap-4 px-4 py-3.5 transition hover:border-ocean-400/25 hover:bg-white/[0.06]"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13.5px] font-medium text-slate-100">
-                    {conversation.title}
-                  </p>
-                  <p className="mt-0.5 truncate text-[11.5px] text-slate-500">
-                    {conversation.preview || "—"}
-                  </p>
-                </div>
-                <div className="hidden shrink-0 text-right text-[11px] text-slate-500 sm:block">
-                  <p>{t("conversations.messages", { count: conversation.messageCount })}</p>
-                  <p className="text-slate-600">
-                    {t("conversations.updated", {
-                      time: formatDateTime(conversation.updatedAt, lang),
-                    })}
-                  </p>
-                </div>
-                <ArrowRightIcon className="h-4 w-4 shrink-0 text-slate-600" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+
+        {loading ? (
+          <p className="py-14 text-center text-[11px] text-slate-600">{t("common.loading")}</p>
+        ) : error ? (
+          <p className="py-14 text-center text-[11px] text-rose-300">{error}</p>
+        ) : conversations.length === 0 ? (
+          <div className="px-4 py-14 text-center">
+            <p className="col-head">{t("conversations.empty")}</p>
+            <p className="mx-auto mt-2 max-w-sm text-[12px] text-slate-500">
+              {t("conversations.emptyHint")}
+            </p>
+          </div>
+        ) : (
+          <table className="w-full table-fixed border-collapse">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th scope="col" className="col-head hidden w-[132px] px-4 py-1.5 text-left sm:table-cell">
+                  {t("conversations.updated", { time: "" }).trim()}
+                </th>
+                <th scope="col" className="col-head px-4 py-1.5 text-left">
+                  {t("conversations.colSubject")}
+                </th>
+                <th scope="col" className="col-head hidden w-20 px-2 py-1.5 text-right sm:table-cell">
+                  {t("conversations.messages", { count: "" }).trim()}
+                </th>
+                <th scope="col" className="w-8 px-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {conversations.map((conversation) => (
+                <tr key={conversation.id} className="group border-b border-white/5 last:border-0 hover:bg-white/[0.03]">
+                  <td className="mono hidden whitespace-nowrap px-4 py-2.5 text-[11px] text-slate-600 sm:table-cell">
+                    {formatDateTime(conversation.updatedAt, lang)}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <Link href={`/conversations/${conversation.id}`} className="block min-w-0">
+                      <span className="block truncate text-[12.5px] text-slate-200 group-hover:text-ocean-200">
+                        {conversation.title}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[10.5px] text-slate-600">
+                        {conversation.preview || "—"}
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="mono hidden whitespace-nowrap px-2 py-2.5 text-right text-[11px] text-slate-500 sm:table-cell">
+                    {conversation.messageCount}
+                  </td>
+                  <td className="px-2 text-right">
+                    <ArrowRightIcon className="h-3.5 w-3.5 text-slate-700 group-hover:text-slate-400" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </div>
   );
 }
