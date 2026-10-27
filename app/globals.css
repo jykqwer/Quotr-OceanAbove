@@ -112,4 +112,17 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* The map's pulse animates for one reason only: to show what is selected.
+     Anyone who asked the OS for less motion gets a still highlight instead. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-star,
+    .animate-flow {
+      animation: none !important;
+    }
+
+    .animate-ripple {
+      display: none;
+    }
+  }
 }

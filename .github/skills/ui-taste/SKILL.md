@@ -75,6 +75,7 @@ Warmth is ambient, not an illustration. Do **not** paint a literal sun behind a 
 - The map gets only a faint radial wash (`rgba(255,122,69,0.10)`), never artwork.
 - **Flight routes are curves.** Draw them with `arcPath()` (quadratic, bowing upward). Straight `<line>` elements are banned on the map.
 - **Flow**: a selected hub's links become dashed ember curves with `animate-flow`; a highlighted ticket route is a gold arc with an ember glow underneath.
+- **A selection breathes.** The chosen city wears a four-point sparkle (`animate-star`) inside one expanding ring (`animate-ripple`); the chosen route carries a comet with a long head and a short tail (`animate-flow`, negative `stroke-dashoffset`) so it visibly travels from origin to destination. That is the only place a pulse is allowed, and it must die under `prefers-reduced-motion`. Sizes are in map units — the viewBox is 21 040 wide and drawn at ~0.02 scale, so anything below ~60 units does not exist on screen.
 - **Stamp lands**: `animate-stamp` when a quote becomes a ticket.
 
 Not allowed: gradient card fills, gradient text, glow on cards, `backdrop-blur`, parallax, bounce, shimmer, sun/cloud/horizon illustrations inside panels.

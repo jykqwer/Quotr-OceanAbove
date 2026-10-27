@@ -45,6 +45,12 @@ function arcPath(a: Point, b: Point, bow = 0.16): string {
 const GRID_X = [-7500, -5000, -2500, 0, 2500, 5000, 7500];
 const GRID_Y = [-3750, -1250, 1250, 3750];
 
+/** A four-point sparkle centred on the origin: the selected city's halo.
+    Sized in map units — at the usual 0.03 scale this blooms from ~4px to ~30px. */
+const STAR_RADIUS = 620;
+const STAR_WAIST = 84;
+const STAR_PATH = `M 0 ${-STAR_RADIUS} Q ${STAR_WAIST} ${-STAR_WAIST} ${STAR_RADIUS} 0 Q ${STAR_WAIST} ${STAR_WAIST} 0 ${STAR_RADIUS} Q ${-STAR_WAIST} ${STAR_WAIST} ${-STAR_RADIUS} 0 Q ${-STAR_WAIST} ${-STAR_WAIST} 0 ${-STAR_RADIUS} Z`;
+
 /** A–C, D–F, … so a 711-city list stays readable. */
 const LETTER_BUCKETS = [
   { key: "a-c", label: "A–C", from: 65, to: 67 },
@@ -408,7 +414,7 @@ export function NetworkMap({
                   className={active ? "animate-flow stroke-sunset-400" : "stroke-ocean-400"}
                   strokeWidth={active ? 16 : 8}
                   strokeOpacity={active ? 0.95 : activeCity ? 0.07 : 0.32}
-                  strokeDasharray={active ? "10 16" : undefined}
+                  strokeDasharray={active ? "80 120" : undefined}
                   strokeLinecap="round"
                 />
               );
@@ -442,16 +448,23 @@ export function NetworkMap({
           </g>
 
           {selectedCity && (
+            <g fill="none" pointerEvents="none" transform={`translate(${toSvg(selectedCity.x, selectedCity.y).join(" ")})`}>
+              <circle r={420} className="animate-ripple stroke-sunset-300" strokeWidth={34} />
+              <path d={STAR_PATH} className="animate-star fill-sunset-300" fillOpacity={0.6} />
+            </g>
+          )}
+
+          {selectedCity && (
             <g fill="none">
               {selectedCity.isHub
                 ? (index.clients.get(selectedCity.name) ?? []).map((city) => (
                     <path
                       key={`hub-${city.name}`}
                       d={arcPath(selectedCity, city, 0.1)}
-                      className="stroke-sunset-400"
+                      className="animate-flow stroke-sunset-400"
                       strokeWidth={5}
                       strokeOpacity={0.4}
-                      strokeDasharray="6 10"
+                      strokeDasharray="100 100"
                       strokeLinecap="round"
                     />
                   ))
@@ -462,10 +475,10 @@ export function NetworkMap({
                       <path
                         key={`city-hub-${hubName}`}
                         d={arcPath(selectedCity, hub, 0.1)}
-                        className="stroke-sunset-400"
+                        className="animate-flow stroke-sunset-400"
                         strokeWidth={7}
                         strokeOpacity={0.75}
-                        strokeDasharray="8 12"
+                        strokeDasharray="100 100"
                         strokeLinecap="round"
                       />
                     );
@@ -512,6 +525,19 @@ export function NetworkMap({
                   className="stroke-sand"
                   strokeWidth={11}
                   strokeOpacity={0.95}
+                  strokeLinecap="round"
+                />
+              ))}
+              {/* A comet with a tail runs from each leg's origin to its
+                  destination, so the shape shows which way the trip goes. */}
+              {highlightPoints.slice(0, -1).map((point, i) => (
+                <path
+                  key={`hl-flow-${i}`}
+                  d={arcPath(point, highlightPoints[i + 1], 0.16)}
+                  className="animate-flow stroke-cream-100"
+                  strokeWidth={22}
+                  strokeOpacity={0.95}
+                  strokeDasharray="600 120 360 120"
                   strokeLinecap="round"
                 />
               ))}

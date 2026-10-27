@@ -88,7 +88,17 @@ const config: Config = {
         },
         flow: {
           "0%": { strokeDashoffset: "0" },
-          "100%": { strokeDashoffset: "-28" },
+          "100%": { strokeDashoffset: "-1200" },
+        },
+        // The selected city breathes: a star blooms outward and fades.
+        star: {
+          "0%": { opacity: "0.85", transform: "scale(0.24) rotate(0deg)" },
+          "55%": { opacity: "0.4" },
+          "100%": { opacity: "0", transform: "scale(2.4) rotate(45deg)" },
+        },
+        ripple: {
+          "0%": { opacity: "0.45", transform: "scale(0.3)" },
+          "100%": { opacity: "0", transform: "scale(1.9)" },
         },
         stamp: {
           "0%": { opacity: "0", transform: "rotate(-8deg) scale(1.5)" },
@@ -103,7 +113,9 @@ const config: Config = {
       animation: {
         rise: "rise 0.24s ease-out both",
         blink: "blink 1.6s steps(2, end) infinite",
-        flow: "flow 1.1s linear infinite",
+        flow: "flow 1.8s linear infinite",
+        star: "star 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) infinite",
+        ripple: "ripple 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) infinite",
         stamp: "stamp 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) both",
         glow: "glow 8s ease-in-out infinite",
       },
