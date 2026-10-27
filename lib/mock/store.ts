@@ -1,12 +1,28 @@
 import { createHash, randomUUID } from "node:crypto";
-import { ROUTES, legsToTransfers, type RouteFixture } from "@/lib/mock/fixtures";
+import { getGraph } from "@/lib/domain";
+import { findRoute } from "@/lib/domain/route";
+import { formatKm, formatUsd } from "@/lib/format";
 import type { Conversation, Message, Quote, Ticket } from "@/lib/types";
 
 /**
- * In-memory stand-in for app.db so the UI is fully interactive while the real
- * persistence + agent layer is being built. Replace with SQLite repositories in
- * the next phase; the API contract stays the same.
+ * In-memory stand-in for app.db so the app is fully interactive while the
+ * SQLite persistence lands. Numbers always come from lib/domain — this layer
+ * only stores them.
  */
+
+interface QuoteSource {
+  origin: string;
+  destination: string;
+  legs: Quote["legs"];
+  totalDistanceKm: number;
+  priceUsd: number;
+}
+
+function routeFor(origin: string, destination: string): QuoteSource {
+  const route = findRoute(getGraph(), origin, destination);
+  if (!route) throw new Error(`no route ${origin} → ${destination}`);
+  return route;
+}
 
 interface MockUser {
   username: string;
@@ -44,7 +60,7 @@ function ticketId(): string {
 
 function buildQuote(
   conversationId: string,
-  route: RouteFixture,
+  route: QuoteSource,
   status: Quote["status"] = "pending",
 ): Quote {
   return {
@@ -53,7 +69,7 @@ function buildQuote(
     origin: route.origin,
     destination: route.destination,
     legs: route.legs,
-    transfers: legsToTransfers(route.legs),
+    transfers: route.legs.slice(0, -1).map((leg) => leg.to),
     totalDistanceKm: route.totalDistanceKm,
     priceUsd: route.priceUsd,
     status,
@@ -79,9 +95,9 @@ function seed(): Store {
     passwordHash: hashPassword("oceanabove"),
   });
 
-  const london = ROUTES[0];
-  const lima = ROUTES[1];
-  const tokyo = ROUTES[2];
+  const london = routeFor("Shanghai", "London");
+  const lima = routeFor("Guangzhou", "Lima");
+  const tokyo = routeFor("Toronto", "Tokyo");
 
   const londonConversation: Conversation = {
     id: "c_london",
@@ -158,8 +174,9 @@ function seed(): Store {
       conversationId: londonConversation.id,
       role: "assistant",
       content:
-        `Cheapest route from Shanghai to London: 3 legs, transfer at Hong Kong, Lagos. ` +
-        `Total distance ${london.totalDistanceKm.toFixed(2)} km, price $${london.priceUsd.toFixed(2)}. ` +
+        `Cheapest route from ${london.origin} to ${london.destination}: ${london.legs.length} legs, ` +
+        `transfer at ${london.legs.slice(0, -1).map((leg) => leg.to).join(", ")}. ` +
+        `Total distance ${formatKm(london.totalDistanceKm)}, price ${formatUsd(london.priceUsd)}. ` +
         `Review the itinerary below and confirm to book.`,
       createdAt: nowIso(-2 * 60 * 60 * 1000 - 60 * 1000),
       quote: londonQuote,
@@ -184,8 +201,9 @@ function seed(): Store {
       conversationId: tokyoConversation.id,
       role: "assistant",
       content:
-        `Cheapest route from Toronto to Tokyo: 2 legs, transfer at Sydney. ` +
-        `Total distance ${tokyo.totalDistanceKm.toFixed(2)} km, price $${tokyo.priceUsd.toFixed(2)}.`,
+        `Cheapest route from ${tokyo.origin} to ${tokyo.destination}: ${tokyo.legs.length} legs, ` +
+        `transfer at ${tokyo.legs.slice(0, -1).map((leg) => leg.to).join(", ")}. ` +
+        `Total distance ${formatKm(tokyo.totalDistanceKm)}, price ${formatUsd(tokyo.priceUsd)}.`,
       createdAt: nowIso(-26 * 60 * 60 * 1000 - 100 * 1000),
       quote: tokyoQuote,
       tools: [
@@ -345,7 +363,7 @@ export function appendMessage(
   return full;
 }
 
-export function createQuoteForRoute(conversationId: string, route: RouteFixture): Quote {
+export function createQuoteForRoute(conversationId: string, route: QuoteSource): Quote {
   const quote = buildQuote(conversationId, route);
   getStore().quotes.set(quote.id, quote);
   return quote;

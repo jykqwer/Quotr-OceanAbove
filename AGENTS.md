@@ -9,11 +9,12 @@ Read [README.md](./README.md) for setup and [docs/PLAN.zh-CN.md](./docs/PLAN.zh-
 npm install
 npm run dev        # http://localhost:3000
 npm run typecheck  # tsc --noEmit
+npm test           # lib/domain unit tests against the Python oracle fixtures
 npm run build      # must pass before calling work done
 ```
 
 - Node 20+; dependencies are already installed (`npm install` only after manifest changes).
-- No test runner yet. When the domain engine lands, add unit tests for `lib/domain/**` and keep the Python oracle in `scripts/oracle.py` in sync.
+- `lib/domain/**` is pure and unit-tested. After touching route/pricing code or `locations.db`, run `npm run verify:data` (regenerates `scripts/oracle.py` fixtures and diffs both implementations). Never hand-edit `lib/domain/__fixtures__/golden.json`.
 
 ## Architecture
 
@@ -25,12 +26,13 @@ lib/format.ts   the only place numbers are formatted
 lib/i18n/       zh/en dictionaries + language context
 lib/api/        typed client used by all pages
 lib/db/         read-only accessors for locations.db (validates the dataset on load)
-lib/mock/       temporary in-memory backend (fixtures, mock agent, store, session cookie)
-lib/domain/     (planned) pure graph + route + pricing engine — the single source of truth for numbers
+lib/domain/     pure graph + route + pricing engine — the single source of truth for numbers
+lib/agent/      deterministic reply orchestration (stands in for the LLM tool loop)
+lib/mock/       temporary in-memory backend (store, session cookie) — persistence only
 locations.db    read-only dataset: cities, coordinates, hub links
 ```
 
-Current phase: home + pages are complete; `lib/mock/` stands in for persistence and the agent. The home network map renders the raw `locations.db` coordinates, which are an abstract plane, not geography — keep it labeled as such. Keep `/api/*` request/response shapes stable when replacing the mock, so pages keep working unchanged.
+Current phase: routes, distances and prices are real (`lib/domain`), backed by an independent Python oracle. `lib/mock/` now stores state only (users, conversations, quotes, tickets) and must not compute anything. The home network map renders the raw `locations.db` coordinates, which are an abstract plane, not geography — keep it labeled as such. Keep `/api/*` request/response shapes stable.
 
 ## Non-negotiable domain rules
 
@@ -38,8 +40,8 @@ These come from the product spec and are easy to break; verify them in any chang
 
 1. **`locations.db` is the only source of truth.** Open it read-only, never mutate it, never hardcode cities, hubs, coordinates or routes in code or fixtures beyond what already exists.
 2. **`hub_links` stores each hub pair once.** Treat every row as an undirected edge; do not assume both directions exist.
-3. **Transfers happen only at hubs.** A valid route is `origin → hub → … → hub → destination`. A shortest path over the full city graph is wrong: it lets passengers change planes in non-hub cities (about 35% of sampled pairs get a wrong, cheaper price). Use the hub-subgraph APSP plus endpoint enumeration.
-4. **Rounding is part of the contract.** Round each leg to 2 dp, `totalDistanceKm` = sum of those rounded legs, `priceUsd = round(total × 0.13, 2)`. Never sum per-leg prices. Displayed numbers must reconcile by hand.
+3. **Transfers happen only at hubs.** A valid route is `origin → hub → … → hub → destination`. A shortest path over the full city graph is wrong: it lets passengers change planes in non-hub cities (about 35% of sampled pairs get a wrong, cheaper price). Use the hub-subgraph APSP plus endpoint enumeration. `lib/domain` implements this; do not reimplement graph or pricing math anywhere else, and never inside `lib/mock/` or a component.
+4. **Rounding is part of the contract.** Round each leg to 2 dp, `totalDistanceKm` = sum of those rounded legs, `priceUsd = round(total × 0.13, 2)`. Never sum per-leg prices. Displayed numbers must reconcile by hand. Optimality is decided on **unrounded** distances so rounding never flips a candidate; `lib/domain/pricing.ts` is the only place these rules live.
 5. **The model never does arithmetic.** The LLM resolves intent and calls tools; every distance, price and route shown to the user must come from the domain engine/tool result and be rendered verbatim. Never let it invent or recompute a number.
 6. **Nothing is booked without explicit confirmation.** Quote (immutable snapshot) → user confirmation in the UI (one-time nonce bound to the snapshot hash) → ticket. Do not add a "book directly" tool or path that bypasses this, and do not treat conversational "yes" as sufficient.
 7. **Never guess a city.** Ambiguous names (`San Jose` / `San José`, `Santiago` family) must return candidates and ask. A city with no service must be reported with the nearest served city — never silently substituted.

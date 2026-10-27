@@ -54,8 +54,8 @@ export function MessageBubble({
             <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
               {t("chat.tools")}
             </span>
-            {message.tools.map((tool) => (
-              <span key={`${message.id}-${tool.name}`} className="mono text-[9.5px] text-slate-600">
+            {message.tools.map((tool, index) => (
+              <span key={`${message.id}-${tool.name}-${index}`} className="mono text-[9.5px] text-slate-600">
                 {tool.name}
                 <span className="ml-1 text-slate-700">{tool.ms}ms</span>
               </span>

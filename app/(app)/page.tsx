@@ -57,13 +57,16 @@ export default function HomePage() {
   }, [messages, sending]);
 
   const groups = useMemo(() => {
-    if (!network) return { hubs: [] as string[], cities: [] as string[] };
+    if (!network) return { hubs: [] as string[], cities: [] as string[], unserved: [] as string[] };
     const hubs: string[] = [];
     const cities: string[] = [];
+    const unserved: string[] = [];
     for (const city of network.cities) {
-      (city.isHub ? hubs : cities).push(city.name);
+      if (city.isHub) hubs.push(city.name);
+      else if (city.hubs.length > 0) cities.push(city.name);
+      else unserved.push(city.name);
     }
-    return { hubs, cities };
+    return { hubs, cities, unserved };
   }, [network]);
 
   const send = useCallback(
@@ -304,6 +307,15 @@ export default function HomePage() {
                           </option>
                         ))}
                       </optgroup>
+                      {groups.unserved.length > 0 && (
+                        <optgroup label={t("home.noServiceGroup")}>
+                          {groups.unserved.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <span
                       aria-hidden="true"
@@ -340,6 +352,15 @@ export default function HomePage() {
                           </option>
                         ))}
                       </optgroup>
+                      {groups.unserved.length > 0 && (
+                        <optgroup label={t("home.noServiceGroup")}>
+                          {groups.unserved.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                     <span
                       aria-hidden="true"

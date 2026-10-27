@@ -14,9 +14,12 @@
 npm install
 cp .env.example .env.local   # 填入 LLM_API_KEY（DeepSeek / 任意 OpenAI 兼容服务）
 npm run dev                  # http://localhost:3000
+npm test                     # 域引擎单测（对比 Python oracle 的 golden fixtures）
+npm run oracle               # 重新生成 golden fixtures
+npm run verify:data          # oracle + 单测，数据变更后跑这个
 ```
 
-- 需要 Node.js 20+（开发使用 Node 22）。
+- 需要 Node.js 20+（开发使用 Node 22）；`npm run oracle` 需要 Python 3。
 - 演示账号：**用户名 `demo` · 密码 `oceanabove`**（首次启动自动播种示例数据）。
 - 也可以直接在登录页注册新账号，新账号的机票与会话是空的，便于验证数据隔离。
 
@@ -77,7 +80,25 @@ locations.db                 唯一数据源（只读）
 - 距离为 `locations.db` 中两城坐标的欧氏距离（km）。
 - 段距保留 2 位小数，**总距离 = 各段之和**，**价格 = 总距离 × 0.13 USD**（保留 2 位小数）。
   因此用户可以把每段数字加起来复核总价，不会出现展示漂移。
-- 只会经过枢纽中转换乘；当前页面中的示例数字均按此口径由真实数据算出。
+
+## 路线引擎（lib/domain）
+
+唯一计算源，纯函数、无 IO：
+
+| 文件 | 职责 |
+|---|---|
+| `pricing.ts` | 舍入契约：`round2`、`distanceKm`、`priceFor` |
+| `graph.ts` | 枢纽子图 + Floyd–Warshall 全对最短路；确定性路径还原（字典序最小） |
+| `route.ts` | 最便宜路线：枚举 `hubs(原点) × hubs(终点)`，比较用未舍入距离；平局按 距离 → 段数 → 城市序列 |
+| `resolve.ts` | 城市消歧（折叠大小写与变音符号）、最近可服务城市、自由文本中的城市识别 |
+| `verify.ts` | `verifyRoute()` 断言：每段是真实直飞、中间站必须是枢纽、总距离=段距和、价格=公式值 |
+
+**为什么不能用全图最短路**：那样会让乘客在非枢纽城市换乘。抽样 300 对城市，
+全图最短路有 104 对（约 35%）给出违规且更便宜的票价。
+
+`scripts/oracle.py` 是独立的 Python 参考实现（Bellman–Ford + 显式路径枚举，算法与 TS 版不同），
+生成 `lib/domain/__fixtures__/golden.json`：**1068 条路线（含全部 780 个枢纽对）** + 10 个无服务城市的最近替代。
+`npm run verify:data` 让两套实现逐条比对。
 
 ## 安全与配置
 
@@ -87,5 +108,5 @@ locations.db                 唯一数据源（只读）
 ## 已知限制（本阶段）
 
 - 数据只存在内存中：重启 dev server 会重置为种子数据。
-- 对话回复由规则化 mock 生成，仅覆盖少量示例航线，尚未接入 LLM 与真实路线引擎。
-- 报价确认尚未绑定一次性 nonce（当前整份页面即为预览构建），出票守卫将在持久化阶段实现。
+- 对话回复由**确定性规则**生成（`lib/agent/reply.ts`）：它只编排域引擎调用，不编造数字，但还不能理解复杂表述；LLM 工具循环尚未接入。
+- 报价确认尚未绑定一次性 nonce（出票守卫在持久化阶段实现）。

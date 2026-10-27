@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildMockReply } from "@/lib/mock/agent";
+import { buildReply } from "@/lib/agent/reply";
+import { getGraph } from "@/lib/domain";
+import { verifyRoute } from "@/lib/domain/verify";
 import {
   appendMessage,
   createConversation,
@@ -33,21 +35,27 @@ export async function POST(request: Request) {
     content: text,
   });
 
-  const reply = buildMockReply(text, lang, listTickets(username));
-  const quote = reply.route ? createQuoteForRoute(conversation.id, reply.route) : undefined;
-
   const tools: ToolTrace[] = [];
-  if (reply.route) {
-    tools.push(
-      { name: "resolve_city", ok: true, ms: 6 },
-      { name: "find_route", ok: true, ms: 14 },
-      { name: "create_booking_quote", ok: true, ms: 11 },
-    );
-  } else if (quote === undefined && /(ticket|booking|order|booked|票|订单|行程)/i.test(text)) {
-    tools.push({ name: "list_tickets", ok: true, ms: 8 });
-  } else {
-    tools.push({ name: "resolve_city", ok: true, ms: 5 });
+  const graph = getGraph();
+  const report = (name: string, ok: boolean, ms: number) => tools.push({ name, ok, ms });
+
+  const reply = buildReply(graph, text, lang, listTickets(username), report);
+
+  const route = reply.kind === "route" ? reply.route : null;
+  if (route) {
+    const started = performance.now();
+    verifyRoute(graph, route);
+    report("verify_route", true, Math.round(performance.now() - started));
   }
+
+  const quote = route
+    ? (() => {
+        const started = performance.now();
+        const value = createQuoteForRoute(conversation.id, route);
+        report("create_booking_quote", true, Math.round(performance.now() - started));
+        return value;
+      })()
+    : undefined;
 
   const assistantMessage: Message = appendMessage(conversation.id, {
     conversationId: conversation.id,

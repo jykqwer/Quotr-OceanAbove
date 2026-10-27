@@ -142,6 +142,7 @@ const en = {
   "home.orAsk": "Or describe the trip in your own words",
   "home.newSearch": "New search",
   "home.sameCity": "Origin and destination must differ.",
+  "home.noServiceGroup": "No service",
 
   "map.title": "Route network",
   "map.badge": "Abstract coordinates",
@@ -307,6 +308,7 @@ const zh: Dictionary = {
   "home.orAsk": "或者，用一句话描述行程",
   "home.newSearch": "重新查询",
   "home.sameCity": "出发地与目的地不能相同。",
+  "home.noServiceGroup": "暂未通航",
 
   "map.title": "航线网络",
   "map.badge": "抽象坐标",
