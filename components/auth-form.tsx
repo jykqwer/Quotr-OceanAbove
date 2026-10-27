@@ -8,10 +8,21 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Mode = "signin" | "signup";
+type Field = "username" | "password" | "displayName";
+/** Errors are stored as keys so switching language re-renders them translated. */
+type ErrorKey =
+  | "auth.errUsername"
+  | "auth.errPassword"
+  | "auth.errDisplayName"
+  | "auth.errTaken"
+  | "auth.errInvalid"
+  | "auth.errGeneric";
 
 /** Sign-up only: 8–16 letters or digits. Login accepts whatever was stored. */
 const ACCOUNT_NAME = /^[A-Za-z0-9]{8,16}$/;
 const ACCOUNT_PASSWORD = /^[A-Za-z0-9]{8,16}$/;
+/** Any script, spaces, hyphens, one character — the cap only stops overflow. */
+const DISPLAY_NAME_MAX = 48;
 
 export function AuthForm({ demo }: { demo: { username: string; password: string } }) {
   const { t } = useI18n();
@@ -21,50 +32,49 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ fields: Partial<Record<Field, ErrorKey>>; form: ErrorKey | null }>({
+    fields: {},
+    form: null,
+  });
 
-  function describeError(cause: unknown): string {
+  function describeError(cause: unknown): { field?: Field; key: ErrorKey } {
     if (cause instanceof ApiError) {
       switch (cause.code) {
         case "invalid_credentials":
-          return t("auth.errInvalid");
+          return { key: "auth.errInvalid" };
         case "username_taken":
-          return t("auth.errTaken");
+          return { field: "username", key: "auth.errTaken" };
         case "bad_username":
-          return t("auth.errUsername");
+          return { field: "username", key: "auth.errUsername" };
         case "bad_password":
-          return t("auth.errPassword");
+          return { field: "password", key: "auth.errPassword" };
         case "bad_display_name":
-          return t("auth.errDisplayName");
+          return { field: "displayName", key: "auth.errDisplayName" };
         default:
-          return t("auth.errGeneric");
+          return { key: "auth.errGeneric" };
       }
     }
-    return t("auth.errGeneric");
+    return { key: "auth.errGeneric" };
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError(null);
+    setErrors({ fields: {}, form: null });
 
     const name = username.trim();
     const fullName = displayName.trim();
     if (mode === "signup") {
-      if (!ACCOUNT_NAME.test(name)) {
-        setError(t("auth.errUsername"));
-        return;
-      }
-      if (!ACCOUNT_PASSWORD.test(password)) {
-        setError(t("auth.errPassword"));
-        return;
-      }
-      if (fullName.length < 2 || fullName.length > 48) {
-        setError(t("auth.errDisplayName"));
+      const fields: Partial<Record<Field, ErrorKey>> = {};
+      if (!ACCOUNT_NAME.test(name)) fields.username = "auth.errUsername";
+      if (!ACCOUNT_PASSWORD.test(password)) fields.password = "auth.errPassword";
+      if (fullName.length === 0) fields.displayName = "auth.errDisplayName";
+      if (Object.keys(fields).length > 0) {
+        setErrors({ fields, form: null });
         return;
       }
     }
     if (name.length === 0 || password.length === 0) {
-      setError(t("auth.errInvalid"));
+      setErrors({ fields: {}, form: "auth.errInvalid" });
       return;
     }
 
@@ -78,7 +88,8 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
       router.replace("/");
       router.refresh();
     } catch (cause) {
-      setError(describeError(cause));
+      const { field, key } = describeError(cause);
+      setErrors(field ? { fields: { [field]: key }, form: null } : { fields: {}, form: key });
     } finally {
       setBusy(false);
     }
@@ -113,12 +124,25 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               className="field mono"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              aria-describedby={mode === "signup" ? "username-rules" : undefined}
+              aria-invalid={errors.fields.username ? true : undefined}
+              aria-describedby={
+                errors.fields.username
+                  ? "username-error"
+                  : mode === "signup"
+                    ? "username-rules"
+                    : undefined
+              }
             />
-            {mode === "signup" && (
-              <p id="username-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-                {t("auth.usernameRules")}
+            {errors.fields.username ? (
+              <p id="username-error" className="mt-1 text-[12.5px] leading-relaxed text-rose-300">
+                {t(errors.fields.username)}
               </p>
+            ) : (
+              mode === "signup" && (
+                <p id="username-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+                  {t("auth.usernameRules")}
+                </p>
+              )
             )}
           </div>
 
@@ -134,12 +158,25 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
               className="field mono"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              aria-describedby={mode === "signup" ? "password-rules" : undefined}
+              aria-invalid={errors.fields.password ? true : undefined}
+              aria-describedby={
+                errors.fields.password
+                  ? "password-error"
+                  : mode === "signup"
+                    ? "password-rules"
+                    : undefined
+              }
             />
-            {mode === "signup" && (
-              <p id="password-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
-                {t("auth.passwordRules")}
+            {errors.fields.password ? (
+              <p id="password-error" className="mt-1 text-[12.5px] leading-relaxed text-rose-300">
+                {t(errors.fields.password)}
               </p>
+            ) : (
+              mode === "signup" && (
+                <p id="password-rules" className="mt-1 text-[12.5px] leading-relaxed text-slate-600">
+                  {t("auth.passwordRules")}
+                </p>
+              )
             )}
           </div>
 
@@ -152,16 +189,24 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
                 id="displayName"
                 name="displayName"
                 autoComplete="name"
+                maxLength={DISPLAY_NAME_MAX}
                 className="field"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
+                aria-invalid={errors.fields.displayName ? true : undefined}
+                aria-describedby={errors.fields.displayName ? "displayName-error" : undefined}
               />
+              {errors.fields.displayName && (
+                <p id="displayName-error" className="mt-1 text-[12.5px] leading-relaxed text-rose-300">
+                  {t(errors.fields.displayName)}
+                </p>
+              )}
             </div>
           )}
 
-          {error && (
+          {errors.form && (
             <p className="border-l-2 border-rose-400/60 bg-rose-500/[0.06] px-2 py-1.5 text-[13px] text-rose-300">
-              {error}
+              {t(errors.form)}
             </p>
           )}
 
@@ -182,7 +227,7 @@ export function AuthForm({ demo }: { demo: { username: string; password: string 
             type="button"
             onClick={() => {
               setMode(mode === "signin" ? "signup" : "signin");
-              setError(null);
+              setErrors({ fields: {}, form: null });
             }}
             className="text-[13px] uppercase tracking-[0.1em] text-slate-500 transition-colors hover:text-ocean-300"
           >
