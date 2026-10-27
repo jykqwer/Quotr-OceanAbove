@@ -233,12 +233,12 @@ const zh: Dictionary = {
 
   "login.heroTitle": "用一句话，订一张跨洋机票。",
   "login.heroSubtitle":
-    "告诉 Ocean Above 你想去哪里。它会找出最便宜的路线，逐段列出中转城市与票价，只有在你确认之后才会出票。",
+    "告诉 Ocean Above 你想去哪里。它会找出最便宜的路线。",
 
   "chat.newChat": "新建对话",
   "chat.title": "订票台",
   "chat.subtitle": "用自然语言订票，出票前必定先报价确认。",
-  "chat.placeholder": "例如：Chengdu → Split 最便宜",
+  "chat.placeholder": "例如：Chengdu 到 Split 怎么走最便宜？",
   "chat.send": "发送",
   "chat.sending": "发送中…",
   "chat.emptyTitle": "想去哪里？",
@@ -409,7 +409,7 @@ export const suggestions: Record<Lang, string[]> = {
     "What have I booked?",
   ],
   zh: [
-    "Chengdu → Split 最便宜",
+    "Chengdu 到 Split 怎么走最便宜？",
     "Guangzhou → Lima 票价",
     "你们飞 Abu Dhabi 吗？",
     "我订过哪些机票？",

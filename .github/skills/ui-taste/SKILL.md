@@ -85,6 +85,7 @@ Not allowed: gradient card fills, gradient text, glow on cards, `backdrop-blur`,
 
 - Operational, not promotional: "New booking", "Booking desk", "Fare quote", "Segment", "Confirm & book", "Valid 15 min".
 - No exclamation marks, no emoji, no "✨", no "Let's get you flying".
+- **No AI flavour.** One short sentence beats a compound marketing line. No "Tell X it will…", no "Welcome aboard", no customer-service filler like "Review the itinerary below and confirm to book" — state the rule once and stop. Example prompts must read like things a person would actually type ("What's the cheapest way from Chengdu to Split?"), never arrow-notation keywords ("Chengdu → Split, cheapest").
 - Errors state what happened and what to do next. Both languages, same key, same meaning.
 - **Never narrate the machine.** The screen carries the trip and the price. It does not carry build badges ("preview · sample data"), database names, `read-only`, the pricing formula, our modelling assumptions ("every flight is assumed available"), counts of cities we do not serve, or an explanation of why a control behaves as it does (the barcode accordion, the empty passenger field). Those go in README / PLAN. If a line only makes sense to the person who wrote the code, delete it.
 

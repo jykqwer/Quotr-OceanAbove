@@ -190,7 +190,7 @@ export function buildReply(
   return {
     kind: "help",
     content: zh
-      ? "我可以帮你查询最便宜路线、解释行程与票价，或列出你已预订的机票。试试：「Chengdu → Split 最便宜」「我订过哪些机票」。"
+      ? "我可以帮你查询最便宜路线、解释行程与票价，或列出你已预订的机票。试试：「Chengdu 到 Split 怎么走最便宜？」「我订过哪些机票？」。"
       : 'I can find the cheapest route, explain an itinerary and fare, or list your tickets. Try "Chengdu to Split cheapest" or "what have I booked".',
   };
 }
