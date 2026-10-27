@@ -21,6 +21,7 @@ function ctx(overrides: Partial<ToolContext> = {}): ToolContext {
     conversationId: "c_test",
     tickets: [],
     defaultPassenger: "Tester",
+    lang: "en",
     createQuote: (itinerary) =>
       ({
         id: "q_test",

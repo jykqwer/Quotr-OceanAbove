@@ -109,7 +109,7 @@ export const api = {
 
   createQuoteRequest: (payload: {
     conversationId?: string;
-    journeys: { origin: string; destination: string }[];
+    journeys: { origin?: string; destination: string }[];
     passengers: string[];
     departAt?: string;
     lang: Lang;

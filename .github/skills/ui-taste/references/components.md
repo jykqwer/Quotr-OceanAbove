@@ -165,17 +165,36 @@ placeholder names, one hint line `Comma separated; leave blank for yourself`) an
 labelled `Leg 2` in mono 9px, and carry a text-only `Remove` on the right. The idle panel must still read as
 "one form", not as a builder.
 
+**A multi-city trip is a chain, and the form must say so.** Journey 2 departs where journey 1 lands, so an extra
+pair has **no origin select** — the implied origin lives in the row header instead, as
+`Leg 2 · from Split` (mono 9px `text-sunset-300/70`, the city in `text-slate-500`). Never render an empty
+"from" control: it invites the user to build an open-jaw itinerary the engine rejects. `+ Add a leg` stays
+disabled until the previous destination is chosen, with a one-line reason in the title attribute rather than a
+tooltip component.
+
+**`New search` resets everything.** Origin, destination, every extra leg, the passenger list and the departure
+time all return to their initial values (departure back to tomorrow 09:00). A partial reset leaves invisible
+state behind and the next quote comes out wrong.
+
+**No tool trace anywhere.** The engine records every tool call (`messages.tools_json`, the SSE `step` events),
+but the transcript shows only prose and the boarding pass. Do not reintroduce chips, collapsible "thinking" rows
+or a debug gutter — this product speaks in sentences, not in function names.
+
 ## Composer
 
 ```tsx
-<form className="flex items-stretch rounded-lg border border-white/15 bg-abyss-950 focus-within:border-sunset-400">
-  <span className="mono hidden border-r border-white/10 px-2.5 pt-3 text-sunset-400/70 sm:block">&gt;</span>
-  <textarea className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[13px] outline-none" />
-  <button className="flex w-12 items-center justify-center border-l border-white/10 bg-sunset-500 text-abyss-950" />
+<form className="flex items-stretch border border-white/15 bg-abyss-950 focus-within:border-ocean-400">
+  <textarea className="max-h-32 min-h-[42px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[13px] leading-relaxed outline-none placeholder:text-slate-600" />
+  <button className="flex w-12 shrink-0 items-center justify-center border-l border-white/10 bg-sunset-500 text-abyss-950 disabled:bg-transparent disabled:text-slate-600" />
 </form>
 ```
 
-A prompt caret plus a solid coral send block. That block is the only filled coral on the page besides a pass button.
+A solid coral send block is the only filled coral on the page besides a pass button. No prompt caret before the
+text — a `>` reads as a clickable affordance that does nothing.
+
+**The example sentence is a first-run hint, not a label.** It lives in `placeholder`, so it must be suppressed
+once the conversation has content: `showPlaceholder={messages.length === 0}` on `/chat` and always `false` in the
+home panel's thread mode. Keep `aria-label` unconditionally set — an empty input still needs an accessible name.
 
 ## Stat strip
 

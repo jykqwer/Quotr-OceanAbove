@@ -69,7 +69,8 @@ export function normalizePassengers(input: unknown, fallback: string): string[] 
 }
 
 export interface JourneyRequest {
-  origin: string;
+  /** Omit for every journey after the first: it starts where the previous one ends. */
+  origin?: string;
   destination: string;
 }
 
@@ -118,15 +119,20 @@ export function buildItinerary(graph: DomainGraph, input: BuildItineraryInput): 
 
   const journeys: Journey[] = [];
   for (const request of requests) {
-    const origin = request.origin.trim();
+    // A trip is a chain: every journey after the first departs from where the
+    // previous one landed, so only its destination is needed.
+    const previous = journeys[journeys.length - 1]?.destination;
+    const origin = (request.origin ?? "").trim() || previous || "";
     const destination = request.destination.trim();
     if (!origin || !destination) {
       throw new ItineraryError("bad_city", "both cities are required");
     }
+    if (previous && origin !== previous) {
+      throw new ItineraryError("broken_chain", `${origin} does not continue from ${previous}`);
+    }
     if (origin === destination) {
       throw new ItineraryError("same_city", `${origin} to ${origin} is not a trip`);
     }
-
     const route = findRoute(graph, origin, destination);
     if (!route) throw new ItineraryError("no_route", `no route from ${origin} to ${destination}`);
     verifyRoute(graph, route);
@@ -151,6 +157,15 @@ export function buildItinerary(graph: DomainGraph, input: BuildItineraryInput): 
 /** Re-asserts the whole-itinerary contract: every journey plus the totals. */
 export function verifyItinerary(graph: DomainGraph, itinerary: Itinerary): void {
   if (itinerary.journeys.length === 0) throw new RouteInvariantError("itinerary has no journeys");
+
+  // Every journey must start where the previous one ended.
+  for (const [index, journey] of itinerary.journeys.entries()) {
+    if (index === 0) continue;
+    const previous = itinerary.journeys[index - 1];
+    if (journey.origin !== previous.destination) {
+      throw new RouteInvariantError(`journey ${index + 1} does not continue from ${previous.destination}`);
+    }
+  }
 
   for (const journey of itinerary.journeys) {
     const exactDistanceKm = journey.legs.reduce((sum, leg) => {

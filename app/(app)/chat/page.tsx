@@ -11,7 +11,7 @@ import { api } from "@/lib/api/client";
 import { useConversationSearch } from "@/lib/hooks/conversation-search";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
-import type { Message, Quote, Ticket, ToolTrace } from "@/lib/types";
+import type { Message, Quote, Ticket } from "@/lib/types";
 
 export default function ChatPage() {
   const { t, lang } = useI18n();
@@ -24,7 +24,7 @@ export default function ChatPage() {
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState<{ text: string; tools: ToolTrace[] } | null>(null);
+  const [live, setLive] = useState<{ text: string } | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const skipLoadFor = useRef<string | null>(null);
@@ -85,7 +85,7 @@ export default function ChatPage() {
   async function handleSend(text: string) {
     setSending(true);
     setError(null);
-    setLive({ text: "", tools: [] });
+    setLive({ text: "" });
 
     const optimisticId = `pending-${Date.now()}`;
     setMessages((current) => [
@@ -103,8 +103,6 @@ export default function ChatPage() {
       const result = await api.chat({ conversationId: activeId ?? undefined, text, lang }, {
         onUserMessage: (message) =>
           setMessages((current) => current.map((item) => (item.id === optimisticId ? message : item))),
-        onStep: (trace) =>
-          setLive((current) => (current ? { ...current, tools: [...current.tools, trace] } : current)),
         onDelta: (chunk) =>
           setLive((current) => (current ? { ...current, text: current.text + chunk } : current)),
       });
@@ -218,22 +216,6 @@ export default function ChatPage() {
                         {t("chat.thinking")}
                       </p>
                     )}
-                    {live && live.tools.length > 0 && (
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
-                          {t("chat.tools")}
-                        </span>
-                        {live.tools.map((tool, index) => (
-                          <span
-                            key={`live-${tool.name}-${index}`}
-                            className={`mono text-[9.5px] ${tool.ok ? "text-slate-600" : "text-rose-300/80"}`}
-                          >
-                            {tool.name}
-                            <span className="ml-1 text-slate-700">{tool.ms}ms</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -244,7 +226,11 @@ export default function ChatPage() {
 
         <div className="border-t border-white/10 p-3">
           {error && <p className="mb-2 text-[11px] text-rose-300">{error}</p>}
-          <ChatComposer onSend={handleSend} disabled={sending} />
+          <ChatComposer
+            onSend={handleSend}
+            disabled={sending}
+            showPlaceholder={messages.length === 0}
+          />
         </div>
       </section>
     </div>

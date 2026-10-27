@@ -11,7 +11,7 @@ import { ApiError, api } from "@/lib/api/client";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
 import { suggestions } from "@/lib/i18n/dictionary";
 import { useI18n } from "@/lib/i18n/lang-provider";
-import type { Conversation, Leg, Message, Network, Quote, Ticket, ToolTrace } from "@/lib/types";
+import type { Conversation, Leg, Message, Network, Quote, Ticket } from "@/lib/types";
 
 export default function HomePage() {
   const { t, lang } = useI18n();
@@ -24,11 +24,11 @@ export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState<{ text: string; tools: ToolTrace[] } | null>(null);
+  const [live, setLive] = useState<{ text: string } | null>(null);
 
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
-  const [extraLegs, setExtraLegs] = useState<{ origin: string; destination: string }[]>([]);
+  const [extraLegs, setExtraLegs] = useState<{ destination: string }[]>([]);
   const [passengers, setPassengers] = useState("");
   const [departure, setDeparture] = useState(defaultDepartureInput);
   const [hoverLegs, setHoverLegs] = useState<Leg[] | null>(null);
@@ -79,7 +79,7 @@ export default function HomePage() {
       input:
         | string
         | {
-            journeys: { origin: string; destination: string }[];
+            journeys: { origin?: string; destination: string }[];
             passengers: string[];
             departAt?: string;
           },
@@ -91,7 +91,7 @@ export default function HomePage() {
       if (!trimmed) return;
       setSending(true);
       setError(null);
-      setLive({ text: "", tools: [] });
+      setLive({ text: "" });
 
       const optimisticId = `pending-${Date.now()}`;
       setMessages((current) => [
@@ -118,10 +118,6 @@ export default function HomePage() {
                   onUserMessage: (message) =>
                     setMessages((current) =>
                       current.map((item) => (item.id === optimisticId ? message : item)),
-                    ),
-                  onStep: (trace) =>
-                    setLive((current) =>
-                      current ? { ...current, tools: [...current.tools, trace] } : current,
                     ),
                   onDelta: (chunk) =>
                     setLive((current) =>
@@ -166,7 +162,7 @@ export default function HomePage() {
       setError(t("home.sameCity"));
       return;
     }
-    const incomplete = extraLegs.some((leg) => !leg.origin || !leg.destination || leg.origin === leg.destination);
+    const incomplete = extraLegs.some((leg) => !leg.destination);
     if (incomplete) {
       setError(t("home.sameCity"));
       return;
@@ -177,10 +173,8 @@ export default function HomePage() {
       return;
     }
     void send({
-      journeys: [
-        { origin, destination },
-        ...extraLegs.map((leg) => ({ origin: leg.origin, destination: leg.destination })),
-      ],
+      // Legs after the first continue from the previous destination.
+      journeys: [{ origin, destination }, ...extraLegs.map((leg) => ({ destination: leg.destination }))],
       passengers: passengers
         .split(/[,，、;；]/)
         .map((name) => name.trim())
@@ -189,17 +183,21 @@ export default function HomePage() {
     });
   }
 
-  function updateLeg(index: number, field: "origin" | "destination", value: string) {
+  function updateLeg(index: number, value: string) {
     setExtraLegs((current) =>
-      current.map((leg, position) => (position === index ? { ...leg, [field]: value } : leg)),
+      current.map((leg, position) => (position === index ? { destination: value } : leg)),
     );
   }
 
-  function resetThread() {    setConversationId(null);
+  function resetThread() {
+    setConversationId(null);
     setMessages([]);
     setError(null);
     setOrigin("");
     setDestination("");
+    setExtraLegs([]);
+    setPassengers("");
+    setDeparture(defaultDepartureInput());
   }
 
   const handleQuoteUpdated = useCallback((quote: Quote, ticket?: Ticket) => {
@@ -343,22 +341,6 @@ export default function HomePage() {
                           {t("chat.thinking")}
                         </p>
                       )}
-                      {live && live.tools.length > 0 && (
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
-                            {t("chat.tools")}
-                          </span>
-                          {live.tools.map((tool, index) => (
-                            <span
-                              key={`live-${tool.name}-${index}`}
-                              className={`mono text-[9.5px] ${tool.ok ? "text-slate-600" : "text-rose-300/80"}`}
-                            >
-                              {tool.name}
-                              <span className="ml-1 text-slate-700">{tool.ms}ms</span>
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
@@ -366,7 +348,7 @@ export default function HomePage() {
             </div>
             <div className="border-t border-white/10 p-3">
               {error && <p className="mb-2 text-[11px] text-rose-300">{error}</p>}
-              <ChatComposer onSend={send} disabled={sending} />
+              <ChatComposer onSend={send} disabled={sending} showPlaceholder={false} />
             </div>
           </>
         ) : (
@@ -409,38 +391,38 @@ export default function HomePage() {
                 />
               </div>
 
-              {extraLegs.map((leg, index) => (
-                <div key={`leg-${index}`} className="border-l-2 border-sunset-500/30 pl-2">
-                  <div className="flex items-center justify-between">
-                    <span className="mono text-[9px] uppercase tracking-[0.14em] text-sunset-300/70">
-                      {t("home.legN", { n: index + 2 })}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setExtraLegs((current) => current.filter((_, i) => i !== index))}
-                      className="text-[10px] text-slate-600 transition-colors hover:text-rose-300"
-                    >
-                      {t("home.removeLeg")}
-                    </button>
+              {extraLegs.map((leg, index) => {
+                // Every leg departs where the previous one landed.
+                const from = index === 0 ? destination : extraLegs[index - 1].destination;
+                return (
+                  <div key={`leg-${index}`} className="border-l-2 border-sunset-500/30 pl-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="mono min-w-0 truncate text-[9px] uppercase tracking-[0.14em] text-sunset-300/70">
+                        {t("home.legN", { n: index + 2 })}
+                        <span className="ml-1.5 normal-case tracking-normal text-slate-500">
+                          {t("home.legFrom", { city: from || "—" })}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setExtraLegs((current) => current.filter((_, i) => i !== index))}
+                        className="shrink-0 text-[10px] text-slate-600 transition-colors hover:text-rose-300"
+                      >
+                        {t("home.removeLeg")}
+                      </button>
+                    </div>
+                    <div className="mt-1">
+                      <CitySelect
+                        id={`leg-${index}-destination`}
+                        label={t("home.toCity")}
+                        value={leg.destination}
+                        onChange={(value) => updateLeg(index, value)}
+                        groups={groups}
+                      />
+                    </div>
                   </div>
-                  <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <CitySelect
-                      id={`leg-${index}-origin`}
-                      label={t("home.fromCity")}
-                      value={leg.origin}
-                      onChange={(value) => updateLeg(index, "origin", value)}
-                      groups={groups}
-                    />
-                    <CitySelect
-                      id={`leg-${index}-destination`}
-                      label={t("home.toCity")}
-                      value={leg.destination}
-                      onChange={(value) => updateLeg(index, "destination", value)}
-                      groups={groups}
-                    />
-                  </div>
-                </div>
-              ))}
+                );
+              })}
 
               <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-[1fr_auto]">
                 <div className="min-w-0">
@@ -458,8 +440,17 @@ export default function HomePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setExtraLegs((current) => [...current, { origin: "", destination: "" }])}
-                  disabled={extraLegs.length >= 3}
+                  onClick={() => setExtraLegs((current) => [...current, { destination: "" }])}
+                  disabled={
+                    extraLegs.length >= 3 ||
+                    !destination ||
+                    extraLegs.some((leg) => !leg.destination)
+                  }
+                  title={
+                    !destination || extraLegs.some((leg) => !leg.destination)
+                      ? t("home.addLegHint")
+                      : undefined
+                  }
                   className="btn-quiet h-9 justify-center border border-dashed border-white/15 px-3 disabled:opacity-40"
                 >
                   + {t("home.addLeg")}

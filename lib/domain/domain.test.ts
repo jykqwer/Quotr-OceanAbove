@@ -253,6 +253,44 @@ test("an itinerary rejects the trips it cannot price", () => {
   );
 });
 
+test("multi-leg trips chain: later legs only name their destination", () => {
+  const chained = buildItinerary(graph, {
+    journeys: [
+      { origin: "Chengdu", destination: "Split" },
+      { destination: "Lisbon" },
+      { destination: "Ottawa" },
+    ],
+    passengers: ["Ada"],
+  });
+
+  assert.equal(chained.journeys.length, 3);
+  assert.deepEqual(
+    chained.journeys.map((journey) => `${journey.origin}->${journey.destination}`),
+    ["Chengdu->Split", "Split->Lisbon", "Lisbon->Ottawa"],
+  );
+  verifyItinerary(graph, chained);
+
+  // A leg that does not continue from the previous destination is refused.
+  assert.throws(
+    () =>
+      buildItinerary(graph, {
+        journeys: [
+          { origin: "Chengdu", destination: "Split" },
+          { origin: "Lisbon", destination: "Ottawa" },
+        ],
+        passengers: [],
+      }),
+    /does not continue from Split/,
+  );
+
+  // The verifier catches a tampered chain too.
+  const tainted = {
+    ...chained,
+    journeys: [chained.journeys[0], { ...chained.journeys[1], origin: "Osaka" }, chained.journeys[2]],
+  };
+  assert.throws(() => verifyItinerary(graph, tainted), /does not continue from Split/);
+});
+
 test("verifyItinerary catches a tampered total", () => {
   const itinerary = buildItinerary(graph, {
     journeys: [{ origin: "Chengdu", destination: "Split" }],

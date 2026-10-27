@@ -10,7 +10,7 @@ import {
 import { resolveCity, suggestCities } from "@/lib/domain/resolve";
 import { directDestinations } from "@/lib/domain/network";
 import { formatDateTime, formatKm, formatUsd } from "@/lib/format";
-import type { Quote, Ticket } from "@/lib/types";
+import type { Lang, Quote, Ticket } from "@/lib/types";
 import type { LlmToolSchema } from "@/lib/agent/llm";
 
 export interface ToolContext {
@@ -21,6 +21,8 @@ export interface ToolContext {
   tickets: Ticket[];
   /** Used when the passenger names nobody: the account holder. */
   defaultPassenger: string;
+  /** Language of the user's message: tool payloads are pre-formatted in it. */
+  lang: Lang;
   /** Injected so tests can exercise the loop without touching SQLite. */
   createQuote: (itinerary: Itinerary) => Quote;
 }
@@ -41,14 +43,17 @@ const JOURNEYS_SCHEMA = {
   minItems: 1,
   maxItems: MAX_JOURNEYS,
   description:
-    "One entry per city pair the passenger flies. A one-way trip has exactly one entry; a round trip or open jaw has one entry per city pair. Never split one city pair into several entries.",
+    "One entry per city pair the passenger flies, in travel order. A one-way trip has exactly one entry; a round trip or a multi-leg trip has one entry per city pair. Each entry after the first continues from the previous destination, so only its destination is needed.",
   items: {
     type: "object",
     properties: {
-      origin: { type: "string", description: "Exact origin city name from resolve_city." },
+      origin: {
+        type: "string",
+        description: "Origin. Required for the first entry only; later entries start where the previous one ends.",
+      },
       destination: { type: "string", description: "Exact destination city name from resolve_city." },
     },
-    required: ["origin", "destination"],
+    required: ["destination"],
     additionalProperties: false,
   },
 };
@@ -136,7 +141,7 @@ export const TOOL_SCHEMAS: LlmToolSchema[] = [
 ];
 
 /** Numbers and city names the assistant is allowed to repeat. */
-export function itineraryPayload(itinerary: Itinerary) {
+export function itineraryPayload(itinerary: Itinerary, lang: Lang = "en") {
   return {
     journeys: itinerary.journeys.map((journey, index) => ({
       index: index + 1,
@@ -156,7 +161,7 @@ export function itineraryPayload(itinerary: Itinerary) {
     passengers: itinerary.passengers,
     passengerCount: itinerary.passengers.length,
     totalDistance: formatKm(itinerary.totalDistanceKm),
-    departure: formatDateTime(itinerary.departAt, "en"),
+    departure: formatDateTime(itinerary.departAt, lang),
     farePerPassenger: formatUsd(itinerary.priceUsd),
     orderTotal: formatUsd(itinerary.totalPriceUsd),
   };
@@ -180,7 +185,7 @@ export async function runTool(
     case "create_booking_quote":
       return priceItinerary(args, ctx, state, true);
     case "list_my_tickets":
-      return { ok: true, payload: ticketsPayload(ctx.tickets) };
+      return { ok: true, payload: ticketsPayload(ctx.tickets, ctx.lang) };
     default:
       return { ok: false, payload: { error: "unknown_tool", name } };
   }
@@ -305,10 +310,10 @@ function priceItinerary(  args: Record<string, unknown>,
   const journeys = rawJourneys
     .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object")
     .map((entry) => ({
-      origin: typeof entry.origin === "string" ? entry.origin : "",
+      origin: typeof entry.origin === "string" ? entry.origin : undefined,
       destination: typeof entry.destination === "string" ? entry.destination : "",
     }))
-    .filter((entry) => entry.origin && entry.destination);
+    .filter((entry) => entry.destination);
 
   if (journeys.length === 0) return { ok: false, payload: { error: "journeys_required" } };
 
@@ -329,7 +334,7 @@ function priceItinerary(  args: Record<string, unknown>,
 
   state.itinerary = itinerary;
   if (!alsoCreateQuote) {
-    return { ok: true, payload: { status: "ok", verified: true, ...itineraryPayload(itinerary) } };
+    return { ok: true, payload: { status: "ok", verified: true, ...itineraryPayload(itinerary, ctx.lang) } };
   }
 
   const quote = ctx.createQuote(itinerary);
@@ -341,12 +346,12 @@ function priceItinerary(  args: Record<string, unknown>,
       quoteId: quote.id,
       expiresAt: quote.expiresAt,
       bookingRequiresUserConfirmation: true,
-      ...itineraryPayload(itinerary),
+      ...itineraryPayload(itinerary, ctx.lang),
     },
   };
 }
 
-function ticketsPayload(tickets: Ticket[]) {
+function ticketsPayload(tickets: Ticket[], lang: Lang) {
   return {
     count: tickets.length,
     tickets: tickets.map((ticket) => ({
@@ -357,7 +362,7 @@ function ticketsPayload(tickets: Ticket[]) {
           : `${ticket.origin} → ${ticket.destination}`,
       passengers: ticket.passengers,
       totalDistance: formatKm(ticket.totalDistanceKm),
-      departure: ticket.departAt ? formatDateTime(ticket.departAt, "en") : null,
+      departure: ticket.departAt ? formatDateTime(ticket.departAt, lang) : null,
       farePerPassenger: formatUsd(ticket.priceUsd),
       orderTotal: formatUsd(ticket.totalPriceUsd),
       bookedAt: ticket.bookedAt,

@@ -50,7 +50,8 @@ These come from the product spec and are easy to break; verify them in any chang
 5. **The model never does arithmetic.** The LLM resolves intent and calls tools; every distance, price and route shown to the user must come from the domain engine/tool result and be rendered verbatim. This is enforced, not just prompted: tool results carry pre-formatted display strings, and `lib/agent/guard.ts` rejects any numeric token the engine did not produce (`number_guard`) as well as any affirmative booking claim (`claim_guard`). A rejected message falls back to the deterministic summary in `lib/agent/reply.ts`; never weaken or bypass those guards.
 6. **Nothing is booked without explicit confirmation.** Quote (immutable snapshot) → user confirmation in the UI (one-time nonce bound to the snapshot hash) → ticket. Do not add a "book directly" tool or path that bypasses this, and do not treat conversational "yes" as sufficient. The agent has no booking tool at all; `lib/store/confirmQuote` is the only writer of tickets, and the assistant may never claim one was issued.
 7. **Never guess a city.** Ambiguous names (`San Jose` / `San José`, `Santiago` family) must return candidates and ask. A city with no service must be reported with the nearest served city — never silently substituted.
-8. Tie-breaks must stay deterministic: lowest distance → fewest legs → lexicographic city sequence.
+8. **A multi-journey trip is a chain.** Journey N+1 departs from journey N's destination, so `journeys[i].origin` may be omitted and is filled in from the previous journey; only the first journey has a real origin. A supplied origin that does not continue the chain is rejected (`broken_chain`) in `lib/domain/itinerary.ts` and re-checked by `verifyItinerary`. Open-jaw itineraries are out of scope — do not "fix" this into two independent trips.
+9. Tie-breaks must stay deterministic: lowest distance → fewest legs → lexicographic city sequence.
 
 ## Conventions
 

@@ -48,20 +48,6 @@ export function MessageBubble({
         {message.quote && (
           <QuoteCard quote={message.quote} readOnly={readOnly} onUpdated={onQuoteUpdated} />
         )}
-
-        {message.tools?.length ? (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="text-[9.5px] uppercase tracking-[0.16em] text-slate-700">
-              {t("chat.tools")}
-            </span>
-            {message.tools.map((tool, index) => (
-              <span key={`${message.id}-${tool.name}-${index}`} className="mono text-[9.5px] text-slate-600">
-                {tool.name}
-                <span className="ml-1 text-slate-700">{tool.ms}ms</span>
-              </span>
-            ))}
-          </div>
-        ) : null}
       </div>
     </div>
   );

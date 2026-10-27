@@ -33,7 +33,11 @@ export async function POST(request: Request) {
     | null;
 
   const journeys = (body?.journeys ?? [])
-    .filter((item) => item && typeof item.origin === "string" && typeof item.destination === "string")
+    .filter((item) => item && typeof item.destination === "string")
+    .map((item) => ({
+      origin: typeof item.origin === "string" ? item.origin : undefined,
+      destination: item.destination,
+    }))
     .slice(0, MAX_JOURNEYS);
   if (journeys.length === 0) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
